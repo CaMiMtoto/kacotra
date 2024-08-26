@@ -1,0 +1,76 @@
+@extends('auth.body.main')
+
+@section('content')
+<div class="container-xl px-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-5 col-lg-6 col-md-8 col-sm-11">
+            <div class="card my-2">
+                <img src="{{ asset('assets/img/logos/kacotra-cement-01.png') }}" alt="KACOTRA Ltd" class="img-fluid mx-5" />
+                <div class="card-body px-3 text-center">
+                    <div class="h3 fw-light mb-0">Sign In</div>
+                </div>
+                <hr class="my-0" />
+                <div class="card-body px-3">
+                    <!-- BEGIN: Login Form-->
+                    <form action="{{ route('login') }}" method="POST">
+                        @csrf
+                        <!-- Form Group (email address)-->
+                        <div class="mb-1">
+                            <label class="text-gray-600 small" for="input_type">Email / Username</label>
+                            <input
+                                class="form-control form-control-solid @if($errors->get('email') OR $errors->get('username')) is-invalid @endif"
+                                type="text"
+                                id="input_type"
+                                name="input_type"
+                                placeholder=""
+                                value="{{ old('input_type') }}"
+                                autocomplete="off"
+                            />
+                            @if ($errors->get('email') OR $errors->get('username'))
+                                <div class="invalid-feedback">
+                                    Incorrect username or password.
+                                </div>
+                            @endif
+                        </div>
+                        <!-- Form Group (password)-->
+                        <div class="mb-1">
+                            <label class="text-gray-600 small" for="password">Password</label>
+                            <input
+                                class="form-control form-control-solid @if($errors->get('email') OR $errors->get('username')) is-invalid @endif @error('password') is-invalid @enderror"
+                                type="password"
+                                id="password" name="password"
+                                placeholder=""
+                            />
+                            @error('password')
+                            <div class="invalid-feedback">
+                                <i class="bx bx-radio-circle"></i>
+                                {{ $message }}
+                            </div>
+                            @enderror
+                        </div>
+                        <!-- Form Group (forgot password link)-->
+                        <div class="mb-1"><a class="small" href="#">Forgot your password?</a></div>
+                        <!-- Form Group (login box)-->
+                        <div class="d-flex align-items-center justify-content-between mb-0">
+                            <div class="form-check">
+                                <input class="form-check-input" id="remember_me" name="remember" type="checkbox" />
+                                <label class="form-check-label" for="remember_me">Remember me.</label>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </div>
+                    </form>
+                    <!-- END: Login Form-->
+                </div>
+                <hr class="my-0" />
+                <div class="card-body px-3 py-4">
+                    <div class="small text-center">
+                        New user?
+                        <a href="{{ route('register') }}">Create an account!</a>
+                    </div>
+                </div>
+            </div>
+            <!-- END: Social Login Form-->
+        </div>
+    </div>
+</div>
+@endsection

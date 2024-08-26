@@ -1,0 +1,187 @@
+@extends('dashboard.body.main')
+
+@section('content')
+<!-- BEGIN: Header -->
+<header class="page-header page-header-dark bg-gradient-primary-to-secondary pb-10">
+    <div class="container-xl px-4">
+        <div class="page-header-content pt-4">
+            <div class="row align-items-center justify-content-between">
+                <div class="col-auto my-4">
+                    <h1 class="page-header-title">
+                        <div class="page-header-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+                        {{ $title }}
+                    </h1>
+                </div>
+                <div class="col-auto my-4">
+                    <a href="{{ route('stocks.import') }}" class="btn btn-success add-list my-1"><i class="fa-solid fa-file-import me-3"></i>Import</a>
+                    <a href="{{ route('stocks.export') }}" class="btn btn-warning add-list my-1"><i class="fa-solid fa-file-arrow-down me-3"></i>Export</a>
+                    {{-- <a href="{{ route('stocks.create') }}" class="btn btn-primary add-list my-1"><i class="fa-solid fa-plus me-3"></i>Add</a> --}}
+                    <a href="{{ route('stocks.index') }}" class="btn btn-danger add-list my-1"><i class="fa-solid fa-trash me-3"></i>Clear Search</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BEGIN: Alert -->
+    <div class="container-xl px-4 mt-n4">
+        @if (session()->has('success'))
+        <div class="alert alert-success alert-icon" role="alert">
+            <button class="btn-close" type="button" data-bs-dismiss="alert" aria-label="Close"></button>
+            <div class="alert-icon-aside">
+                <i class="far fa-flag"></i>
+            </div>
+            <div class="alert-icon-content">
+                {{ session('success') }}
+            </div>
+        </div>
+        @endif
+    </div>
+    <!-- END: Alert -->
+</header>
+<!-- END: Header -->
+
+
+<!-- BEGIN: Main Page Content -->
+<div class="container px-2 mt-n10">
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row mx-n4">
+                {{-- <div class="col-lg-12 card-header mt-n4">
+                    <form action="{{ route('stocks.index') }}" method="GET">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between">
+
+                            <div class="form-group row align-items-center justify-content-between">
+                                <label class="control-label col-sm-3" for="search">Search:</label>
+                                <div class="col-sm-8">
+                                    <div class="input-group">
+                                        <input type="text" id="search" class="form-control me-1" name="search" placeholder="Search sale" value="{{ request('search') }}">
+                                        <div class="input-group-append">
+                                            <button type="submit" class="input-group-text bg-primary"><i class="fa-solid fa-magnifying-glass font-size-20 text-white"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div> --}}
+
+                @include('partials.stock-header')
+
+
+                <hr>
+
+
+
+                <div class="col-lg-12">
+                    <div class="table-responsive">
+                        <div class="overflow-auto" style="min-height:200px;max-height:400px">
+                            <table class="table table-sm table-striped align-middle">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th scope="col">No.</th>
+                                        <th scope="col">@sortablelink('product.product_name', 'Product')</th>
+                                        <th scope="col">@sortablelink('stock_date', 'Stock date')</th>
+                                        <th scope="col">@sortablelink('opening', 'Opening')</th>
+                                        <th scope="col">@sortablelink('sales', 'Sales')</th>
+                                        <th scope="col">@sortablelink('purchases', 'Purchases')</th>
+                                        <th scope="col">@sortablelink('damages', 'Damages')</th>
+                                        <th scope="col">@sortablelink('closing', 'Closing')</th>
+                                        <th scope="col">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($stocks as $stock)
+                                    <tr>
+                                        <th scope="row">{{ (($stocks->currentPage() * (request('row') ? request('row') : 10)) - (request('row') ? request('row') : 10)) + $loop->iteration  }}</th>
+                                        <td>{{ $stock->product->product_name }}</td>
+                                        <td>{{ $stock->stock_date }}</td>
+                                        <td>{{ $stock->opening }} <br><span class="text-xs fst-italic">({{ number_format($stock->stock_value) }})</span></td>
+                                        <td>{{ $stock->sales }} <br><span class="text-xs fst-italic">({{ number_format($stock->sale_value) }})</span></td>
+                                        <td>{{ $stock->purchases }} <br><span class="text-xs fst-italic">({{ number_format($stock->purchase_value) }})</span></td>
+                                        <td>{{ $stock->damages }} <br><span class="text-xs fst-italic">({{ number_format($stock->damage_value) }})</span></td>
+                                        <td>{{ $stock->closing }} <br><span class="text-xs fst-italic">({{ number_format($stock->closing_value) }})</span></td>
+                                        <td>
+                                            <div class="d-flex">
+                                                <a href="{{ route('stocks.show', $stock->id) }}" class="btn btn-outline-success btn-sm mx-1"><i class="fa-solid fa-eye"></i></a>
+                                                <a href="{{ route('stocks.edit', $stock->id) }}" class="btn btn-outline-primary btn-sm mx-1"><i class="fas fa-edit"></i></a>
+                                                {{-- <form action="{{ route('stocks.destroy', $stock->id) }}" method="POST">
+                                                    @method('delete')
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this record?')">
+                                                        <i class="far fa-trash-alt"></i>
+                                                    </button>
+                                                </form> --}}
+
+                                                @if (auth()->user()->role == 'admin')
+                                                    <a href="{{ route('stocks.deleteStock', $stock->id) }}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this record?')"><i class="far fa-trash-alt"></i></a>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <table class="table table-sm table-dark table-striped align-middle">
+                            <tbody>
+                                <tr>
+                                    <th scope="row" colspan="6">Total Opening Value</th>
+                                    <td class="text-end">{{ number_format($totalOpening,0) }}</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row" colspan="6">Total Sales</th>
+                                    <td class="text-end">{{ number_format($totalSales,0) }}</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row" colspan="6">Total Purchases</th>
+                                    <td class="text-end">{{ number_format($totalPurchases,0) }}</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row" colspan="6">Total Damages</th>
+                                    <td class="text-end">{{ number_format($totalDamages,0) }}</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row" colspan="6">Total Closing</th>
+                                    <td class="text-end">{{ number_format($totalClosing,0) }}</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row" colspan="6">Cost</th>
+                                    <td class="text-end">{{ number_format($cost,0) }}</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row" colspan="6">Profit</th>
+                                    <td class="text-end">{{ number_format($profit,0) }}</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                                {{-- <tr>
+                                    <th scope="row" colspan="6">Total Paid</th>
+                                    <td class="text-end">{{ number_format($totalPaid,0) }}</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row" colspan="6">Balance</th>
+                                    <td class="text-end">{{ number_format($balance,0) }}</td>
+                                    <td colspan="2"></td>
+                                </tr> --}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {{ $stocks->links() }}
+
+                {{-- {{ $sales->links() }} --}}
+            </div>
+
+        </div>
+    </div>
+</div>
+<!-- END: Main Page Content -->
+@endsection
