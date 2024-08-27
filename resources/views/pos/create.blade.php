@@ -131,7 +131,7 @@
                         <h3 class="modal-title text-center mx-auto" id="modalCenterTitle">Invoice of {{ $customer->name }}<br/>Total Amount {{ number_format(Cart::total()) }} RwF</h3>
                     </div>
 
-                    <form action="{{ route('pos.createOrder') }}" method="POST">
+                    <form action="{{ route('pos.createOrder') }}" method="POST" id="createInvoiceForm">
                         @csrf
                         <div class="modal-body">
                             <div class="modal-body">
@@ -175,6 +175,12 @@
         <!-- END: Modal -->
 
         <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}"></script>
+{{--    jsValidation scripts--}}
+        <script src="{{ asset('assets/js/jquery.min.js') }}"></script>
+        <script src="{{ asset('vendor/jsvalidation/js/jsvalidation.min.js') }}"></script>
+        {!! JsValidator::formRequest(\App\Http\Requests\ValidateCreateOrderRequest::class,'#createInvoiceForm') !!}
+
+
 
     </body>
 </html>

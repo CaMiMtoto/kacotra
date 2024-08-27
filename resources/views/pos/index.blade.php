@@ -22,21 +22,7 @@
 </header>
 <!-- END: Header -->
 
-<!-- BEGIN: Alert -->
-<div class="container-xl px-4">
-    @if (session()->has('success'))
-    <div class="alert alert-success alert-icon" role="alert">
-        <button class="btn-close" type="button" data-bs-dismiss="alert" aria-label="Close"></button>
-        <div class="alert-icon-aside">
-            <i class="far fa-flag"></i>
-        </div>
-        <div class="alert-icon-content">
-            {{ session('success') }}
-        </div>
-    </div>
-    @endif
-</div>
-<!-- END: Alert -->
+
 
 <!-- BEGIN: Main Page Content -->
 <div class="container-xl px-4">
@@ -64,13 +50,14 @@
                             </thead>
                             <tbody>
                                 @foreach ($carts as $item)
-                                <tr>
-                                    <td>{{ $item->name }}</td>
-                                    <td style="min-width: 170px;">
+                                <tr class="small">
+                                    <td><small>{{ $item->name }}</small></td>
+                                    <td style="width: 150px;">
                                         <form action="{{ route('pos.updateCartItem', $item->rowId) }}" method="POST">
                                             @csrf
-                                            <div class="input-group">
-                                                <input type="number" class="form-control input-sm" step="any" name="qty" required value="{{ old('qty', $item->qty) }}">
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" class="form-control" step="any" name="qty"
+                                                       required value="{{ old('qty', $item->qty) }}">
                                                 @if(session()->has('error'))
                                                 <span class="invalid-feedback">
                                                     {{ session()->get('error') }}
@@ -78,13 +65,13 @@
                                                 @endif
                                                 <input type="hidden" class="form-control" name="id" required value="{{ old('id', $item->id) }}">
                                                 <div class="input-group-append">
-                                                    <button type="submit" class="btn btn-success border-none" data-toggle="tooltip" data-placement="top" title="" data-original-title="Sumbit"><i class="fas fa-check"></i></button>
+                                                    <button type="submit" class="btn btn-success border-none rounded-0 rounded-end" data-toggle="tooltip" data-placement="top" title="" data-original-title="Sumbit"><i class="fas fa-check"></i></button>
                                                 </div>
                                             </div>
                                         </form>
                                     </td>
-                                    <td>{{ $item->price }}</td>
-                                    <td>{{ $item->subtotal }}</td>
+                                    <td>{{ number_format($item->price) }}</td>
+                                    <td>{{ number_format($item->subtotal) }}</td>
                                     <td>
                                         <div class="d-flex">
                                             <form action="{{ route('pos.deleteCartItem', $item->rowId) }}" method="POST">
@@ -112,7 +99,7 @@
                         </div>
                         <!-- Form Group (subtotal) -->
                         <div class="col-md-6">
-                            <label class="small mb-1">Subtotal</label>
+                            <label class="small mb-1">Subtotal - <small class="fw-bold">{{ number_format(Cart::subtotal()) }}</small></label>
                             <div class="form-control form-control-solid fw-bold text-red">{{ Cart::subtotal() }}</div>
                         </div>
                     </div>
@@ -120,12 +107,12 @@
                     <div class="row gx-3 mb-3">
                         <!-- Form Group (tax) -->
                         <div class="col-md-6">
-                            <label class="small mb-1">Tax</label>
+                            <label class="small mb-1">Tax- <small class="fw-bold">{{ number_format(Cart::tax()) }}</small></label>
                             <div class="form-control form-control-solid fw-bold text-red">{{ Cart::tax() }}</div>
                         </div>
                         <!-- Form Group (total) -->
                         <div class="col-md-6">
-                            <label class="small mb-1">Total</label>
+                            <label class="small mb-1">Total- <small class="fw-bold">{{ number_format(Cart::total()) }}</small></label>
                             <div class="form-control form-control-solid fw-bold text-red">{{ Cart::total() }}</div>
                         </div>
                     </div>

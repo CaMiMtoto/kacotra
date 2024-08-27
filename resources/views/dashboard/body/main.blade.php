@@ -39,6 +39,9 @@
 
             <div id="layoutSidenav_content">
                 <main>
+{{--                    alerts--}}
+                    <x-alerts/>
+
                 <!-- BEGIN: Content -->
                     @yield('content')
                 <!-- END: Content -->

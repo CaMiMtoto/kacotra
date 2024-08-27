@@ -15,17 +15,18 @@ class PosController extends Controller
      */
     public function index()
     {
-        $row = (int) request('row', 500);
+        $row = (int)request('row', 500);
 
         if ($row < 1 || $row > 500) {
             abort(400, 'The per-page parameter must be an integer between 1 and 500.');
         }
 
         $products = Product::with(['category', 'unit'])
-                ->filter(request(['search']))
-                ->sortable()
-                ->paginate($row)
-                ->appends(request()->query());
+            ->where('stock', '>', 0)
+            ->filter(request(['search']))
+            ->sortable()
+            ->paginate($row)
+            ->appends(request()->query());
 
         $customers = Customer::all()->sortBy('name');
 
@@ -57,14 +58,14 @@ class PosController extends Controller
             return Redirect::back()->with('error', 'Product is less than security stock quantity!');
         } else {
 
-        Cart::add([
-            'id' => $validatedData['id'],
-            'name' => $validatedData['name'],
-            'qty' => 1,
-            'price' => $validatedData['price']
-        ]);
+            Cart::add([
+                'id' => $validatedData['id'],
+                'name' => $validatedData['name'],
+                'qty' => 1,
+                'price' => $validatedData['price']
+            ]);
 
-        return Redirect::back()->with('success', 'Product has been added to cart!');
+            return Redirect::back()->with('success', 'Product has been added to cart!');
             # code...
         }
     }
@@ -74,9 +75,9 @@ class PosController extends Controller
      */
     public function updateCartItem(Request $request, $rowId)
     {
-        $rules = [                                                  
+        $rules = [
             'qty' => 'required|numeric',
-            'id' =>'required|numeric'
+            'id' => 'required|numeric'
         ];
 
 
@@ -98,7 +99,7 @@ class PosController extends Controller
     /**
      * Handle delete product from cart.
      */
-    public function deleteCartItem(String $rowId)
+    public function deleteCartItem(string $rowId)
     {
         Cart::remove($rowId);
 

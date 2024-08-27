@@ -7,6 +7,56 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Kyslik\ColumnSortable\Sortable;
 
+/**
+ * App\Models\Order
+ *
+ * @property int $id
+ * @property string $customer_id
+ * @property string $order_date
+ * @property string $order_status
+ * @property int $is_confirmed
+ * @property int $total_products
+ * @property int $sub_total
+ * @property int $vat
+ * @property int $total
+ * @property string $invoice_no
+ * @property string $payment_type
+ * @property int $pay
+ * @property int $due
+ * @property int $created_by
+ * @property int $updated_by
+ * @property int $is_deleted
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Customer|null $customer
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Due> $dues
+ * @property-read int|null $dues_count
+ * @property-read \App\Models\User|null $user_created
+ * @property-read \App\Models\User|null $user_updated
+ * @method static \Illuminate\Database\Eloquent\Builder|Order newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|Order newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|Order query()
+ * @method static \Illuminate\Database\Eloquent\Builder|Order sortable($defaultParameters = null)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order whereCreatedBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order whereCustomerId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order whereDue($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order whereInvoiceNo($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order whereIsConfirmed($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order whereIsDeleted($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order whereOrderDate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order whereOrderStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order wherePay($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order wherePaymentType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order whereSubTotal($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order whereTotal($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order whereTotalProducts($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order whereUpdatedBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Order whereVat($value)
+ * @mixin \Eloquent
+ */
 class Order extends Model
 {
     use HasFactory, Sortable;
