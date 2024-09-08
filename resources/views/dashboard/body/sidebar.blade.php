@@ -332,7 +332,7 @@
                         <a class="nav-link collapsed" href="javascript:void(0);" data-bs-toggle="collapse"
                            data-bs-target="#pagesCollapseCashflow" aria-expanded="false"
                            aria-controls="pagesCollapseCashflow">
-                            Cashflow Reports
+                            Cash flow Reports
                             <div class="sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                         </a>
                         <div class="collapse" id="pagesCollapseCashflow"
@@ -343,18 +343,18 @@
                                     <div class="nav-link-icon"><i class="fa-solid fa-flag"></i></div>
                                     Daily Cash Report
                                 </a>
-                                <a class="nav-link {{ Request::is('orders/report/cash/current-week*') ? 'active' : '' }}"
-                                   href="{{ route('orders.currentWeekCashReport') }}">
+                                <a class="nav-link "
+                                   href="{{ route('orders.dailyCashReport',['from_date'=>now()->addDays(-7)->toDateString(),'to_date'=>now()->toDateString()]) }}">
                                     <div class="nav-link-icon"><i class="fa-solid fa-calendar-week"></i></div>
                                     Current Week Cash
                                 </a>
-                                <a class="nav-link {{ Request::is('orders/report/cash/current-month*') ? 'active' : '' }}"
-                                   href="{{ route('orders.currentMonthCashReport') }}">
+                                <a class="nav-link "
+                                   href="{{ route('orders.dailyCashReport',['from_date'=>now()->addMonths(-1)->toDateString(),'to_date'=>now()->toDateString()]) }}">
                                     <div class="nav-link-icon"><i class="fa-solid fa-moon"></i></div>
                                     Current Month Cash
                                 </a>
-                                <a class="nav-link {{ Request::is('orders/report/cash/current-year*') ? 'active' : '' }}"
-                                   href="{{ route('orders.currentYearCashReport') }}">
+                                <a class="nav-link"
+                                   href="{{ route('orders.dailyCashReport',['from_date'=>now()->addYears(-1)->toDateString(),'to_date'=>now()->toDateString()]) }}">
                                     <div class="nav-link-icon"><i class="fa-solid fa-sun"></i></div>
                                     Current Year Cash
                                 </a>

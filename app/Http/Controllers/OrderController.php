@@ -19,6 +19,7 @@ use Carbon\Carbon;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\OrderDetails;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +28,7 @@ use Gloudemans\Shoppingcart\Facades\Cart;
 use PhpOffice\PhpSpreadsheet\Writer\Xls;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Haruncpi\LaravelIdGenerator\IdGenerator;
+use Throwable;
 
 class OrderController extends Controller
 {
@@ -449,7 +451,7 @@ class OrderController extends Controller
 
     /**
      * Handle create new order
-     * @throws \Throwable
+     * @throws Throwable
      */
     public function createOrder(ValidateCreateOrderRequest $request)
     {
@@ -478,6 +480,7 @@ class OrderController extends Controller
                 'updated_by' => auth()->user()->id,
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
+                'is_confirmed' => 1,
             ]);
 
             // Insert Order and get ID
@@ -1045,6 +1048,7 @@ class OrderController extends Controller
     /**
      * @param ValidatePayDueOrderRequest $request
      * @return RedirectResponse
+     * @throws Throwable
      */
     public function payDueOrder(ValidatePayDueOrderRequest $request)
     {
@@ -1060,21 +1064,40 @@ class OrderController extends Controller
             return Redirect::route('order.dueOrderDetails', $order->id)
                 ->with('error', 'You cannot pay more than the due amount!');
         }
+        DB::beginTransaction();
+        try {
+            // Determine the new order status
+            $newStatus = $amountDue == 0 ? 'complete' : ($amountDue > 0 ? 'pending' : 'refund');
 
-        // Determine the new order status
-        $newStatus = $amountDue == 0 ? 'complete' : ($amountDue > 0 ? 'pending' : 'refund');
+            // Update order with the new values
+            $order->update([
+                'pay' => $totalPaid,
+                'due' => $amountDue,
+                'order_status' => $newStatus,
+            ]);
 
-        // Update order with the new values
-        $order->update([
-            'pay' => $totalPaid,
-            'due' => $amountDue,
-            'order_status' => $newStatus,
-        ]);
+            // Record due in journal
+            $this->recordJournalEntry($order, $amountToPay, $amountDue);
+            // save order payment
+            $paymentType = Method::query()->where('code', '=', $validatedData['payment_type'])->firstOrFail();
+            $order->payments()->create([
+                'payment_type' => $paymentType->name,
+                'method_id' => $paymentType->id,
+                'pay' => $amountToPay,
+                'due' => $amountDue,
+                'payment_date' => \request('payment_date', Carbon::now()->format('Y-m-d')),
+                'comment' => $validatedData['comment'],
+            ]);
 
-        // Record due in journal
-        $this->recordJournalEntry($order, $amountToPay, $amountDue);
+            DB::commit();
+            return Redirect::route('order.dueOrders')->with('success', 'Due amount has been updated!');
+        } catch (Exception $e) {
+            DB::rollBack();
+            return Redirect::route('order.dueOrderDetails', $order->id)
+                ->with('error', 'An error occurred while processing the payment!: ' . $e->getMessage());
+        }
 
-        return Redirect::route('order.dueOrders')->with('success', 'Due amount has been updated!');
+
     }
 
     private function recordJournalEntry($order, $debit, $amountDue)
@@ -1243,232 +1266,53 @@ class OrderController extends Controller
      */
     public function dailyCashReport()
     {
+
+        $from_date = \request('from_date', Carbon::now()->format('Y-m-d'));
+        $to_date = \request('to_date', Carbon::now()->format('Y-m-d'));
         $row = (int)request('row', 100);
 
         if ($row < 1 || $row > 100) {
             abort(400, 'The per-page parameter must be an integer between 1 and 100.');
         }
 
-        $sales = DB::table('products')
-            ->join('categories', 'products.category_id', '=', 'categories.id')
-            ->join('units', 'products.unit_id', '=', 'units.id')
-            ->join('order_details', 'products.id', '=', 'order_details.product_id')
-            ->where('categories.is_deleted', 0)
-            ->where('units.is_deleted', 0)
-            ->where('order_details.is_deleted', 0)
-            ->select(
-                'products.product_name as p_name',
-                'products.product_image as p_image',
-                'categories.name as c_name',
-                'units.name as u_name',
-                'order_details.product_id as p_id',
-                'order_details.created_at as o_date',
-                DB::raw('SUM(order_details.quantity) as p_quantity'),
-                DB::raw('SUM(order_details.total) as p_sales')
-            )
-            ->whereDate('order_details.created_at', '=', Carbon::now()->format('Y-m-d'))
-            ->where('products.is_deleted', 0)
-            ->groupBy('p_name')
-            ->paginate($row)
-            ->appends(request()->query());
+        $sales = $this->getSales($row);
 
-        $total_paid = Order::whereDate('created_at', '=', Carbon::now()->format('Y-m-d'))
-            ->orWhereDate('updated_at', '=', Carbon::now()->format('Y-m-d'))
-            ->where('is_deleted', 0)
-            ->sum('pay');
-        $total_due = Order::whereDate('created_at', '=', Carbon::now()->format('Y-m-d'))
-            ->orWhereDate('updated_at', '=', Carbon::now()->format('Y-m-d'))
-            ->where('is_deleted', 0)
-            ->sum('due');
+        $total_paid = $this->getTotalPaid($from_date, $to_date);
+        $total_due = $this->getTotalDue($from_date, $to_date);
 
-        $total_refund = Order::whereDate('created_at', Carbon::now()->format('Y-m-d'))
-            ->orWhereDate('updated_at', '=', Carbon::now()->format('Y-m-d'))
-            ->where('is_deleted', 0)
-            ->where('due', '<', 0)
-            ->sum('due');
+        $total_refund = $this->getTotalRefund($from_date, $to_date);
 
 
-        $title = "Cashflow of " . Carbon::now()->format('M d, Y');
+        $title = "Cash flow of " . $from_date . " to " . $to_date;
 
-        $subTotal1 = OrderDetails::with('product')
-            ->whereDate('created_at', '=', Carbon::now()->format('Y-m-d'))
-            ->where('is_deleted', 0)
-            ->sum('total');
+        if ($from_date == $to_date) {
+            $title = "Cash flow of " . $from_date;
+        } else if (Carbon::parse($from_date)->diffInYears(Carbon::parse($to_date)) == 1) {
+            $title = "Annual cash flow of " . $from_date . " to " . $to_date;
+        } else if (Carbon::parse($from_date)->diffInMonths(Carbon::parse($to_date)) == 1) {
+            $title = "Monthly cash flow of " . $from_date . " to " . $to_date;
+        } else if (Carbon::parse($from_date)->diffInWeeks(Carbon::parse($to_date)) == 1) {
+            $title = "Weekly cash flow of " . $from_date . " to " . $to_date;
+        }
 
-        $purchases = DB::table('products')
-            ->join('categories', 'products.category_id', '=', 'categories.id')
-            ->join('units', 'products.unit_id', '=', 'units.id')
-            ->join('purchase_details', 'products.id', '=', 'purchase_details.product_id')
-            ->where('categories.is_deleted', 0)
-            ->where('units.is_deleted', 0)
-            ->where('purchase_details.is_deleted', 0)
-            ->select(
-                'products.product_name as pur_name',
-                'purchase_details.product_id as pur_id',
-                'purchase_details.created_at as pur_date',
-                DB::raw('SUM(purchase_details.quantity) as pur_quantity'),
-                DB::raw('SUM(purchase_details.total) as pur_total')
-            )
-            ->whereDate('purchase_details.created_at', '=', Carbon::now()->format('Y-m-d'))
-            ->where('products.is_deleted', 0)
-            ->groupBy('pur_name')
-            ->paginate($row)
-            ->appends(request()->query());
 
-        $subTotal2 = PurchaseDetails::with('product')
-            ->whereDate('created_at', '=', Carbon::now()->format('Y-m-d'))
-            ->where('is_deleted', 0)
-            ->sum('total');
+        $subTotal1 = $this->getSalesValue($from_date, $to_date);
+        $purchases = $this->getPurchases($row);
+        $subTotal2 = $this->getPurchasesValue($from_date, $to_date);
+        $expenses = $this->getExpenses($row);
+        $subTotal3 = $this->getTotalExpenses($from_date, $to_date);
+        $deposits = $this->getDeposits($row);
+        $subTotal4 = $this->getTotalDeposits($from_date, $to_date);
+        $damages = $this->getDamages($row);
 
-        $expenses = DB::table('issues')
-            ->join('departments', 'issues.department_id', '=', 'departments.id')
-            ->join('units', 'issues.unit_id', '=', 'units.id')
-            ->join('expense_details', 'issues.id', '=', 'expense_details.issue_id')
-            ->where('departments.is_deleted', 0)
-            ->where('units.is_deleted', 0)
-            ->where('expense_details.is_deleted', 0)
-            ->select(
-                'issues.issue_name as exp_name',
-                'expense_details.issue_id as exp_id',
-                'expense_details.created_at as exp_date',
-                DB::raw('SUM(expense_details.occurence) as exp_quantity'),
-                DB::raw('SUM(expense_details.total) as exp_total')
-            )
-            ->whereDate('expense_details.created_at', '=', Carbon::now()->format('Y-m-d'))
-            ->where('issues.is_deleted', 0)
-            ->groupBy('exp_name')
-            ->paginate($row)
-            ->appends(request()->query());
+        $subTotal5 = $this->getTotalDamages($from_date, $to_date);
+        $recoveries = $this->getRecoveries($row);
+        $subTotal6 = $this->getTotalRecoveries($from_date, $to_date);
+        $refunds = $this->getRefunds($row);
 
-        $subTotal3 = ExpenseDetails::with('issue')
-            ->whereDate('created_at', '=', Carbon::now()->format('Y-m-d'))
-            ->where('is_deleted', 0)
-            ->sum('total');
-
-        $deposits = DB::table('deposits')
-            ->join('banks', 'deposits.bank_id', '=', 'banks.id')
-            ->where('banks.is_deleted', 0)
-            ->select(
-                'deposits.deposit_code as dep_code',
-                'banks.name as dep_name',
-                DB::raw('SUM(deposits.amount) as dep_total')
-            )
-            ->whereDate('deposits.created_at', '=', Carbon::now()->format('Y-m-d'))
-            ->where('deposits.is_deleted', 0)
-            ->groupBy('deposits.bank_id')
-            ->paginate($row)
-            ->appends(request()->query());
-
-        $subTotal4 = Deposit::with('bank')
-            ->whereDate('created_at', '=', Carbon::now()->format('Y-m-d'))
-            ->where('is_deleted', 0)
-            ->sum('amount');
-
-        $damages = DB::table('products')
-            ->join('categories', 'products.category_id', '=', 'categories.id')
-            ->join('units', 'products.unit_id', '=', 'units.id')
-            ->join('damage_details', 'products.id', '=', 'damage_details.product_id')
-            ->where('categories.is_deleted', 0)
-            ->where('units.is_deleted', 0)
-            ->where('damage_details.is_deleted', 0)
-            ->select(
-                'products.product_name as dam_name',
-                'damage_details.product_id as dam_id',
-                'damage_details.created_at as dam_date',
-                DB::raw('SUM(damage_details.quantity) as dam_quantity'),
-                DB::raw('SUM(damage_details.total) as dam_total')
-            )
-            ->whereDate('damage_details.created_at', '=', Carbon::now()->format('Y-m-d'))
-            ->where('products.is_deleted', 0)
-            ->groupBy('dam_name')
-            ->paginate($row)
-            ->appends(request()->query());
-
-        $subTotal5 = DamageDetails::with('product')
-            ->whereDate('created_at', '=', Carbon::now()->format('Y-m-d'))
-            ->where('is_deleted', 0)
-            ->sum('total');
-
-        $recoveries = DB::table('recoveries')
-            ->join('methods', 'recoveries.payment_type', '=', 'methods.code')
-            ->join('orders', 'recoveries.order_id', '=', 'orders.id')
-            ->join('customers', 'orders.customer_id', '=', 'customers.id')
-            ->where('methods.is_deleted', 0)
-            ->where('orders.is_deleted', 0)
-            ->where('customers.is_deleted', 0)
-            ->select(
-                'methods.name as rec_method',
-                'methods.code as rec_code',
-                'customers.name as rec_customer',
-                'orders.invoice_no as rec_invoice',
-                'recoveries.payment_type as rec_pay_type',
-                'recoveries.pay_date as rec_date',
-                DB::raw('SUM(recoveries.pay) as rec_total')
-            )
-            ->whereDate('recoveries.pay_date', '=', Carbon::now()->format('Y-m-d'))
-            ->where('recoveries.is_deleted', 0)
-            ->groupBy('order_id')
-            ->paginate($row)
-            ->appends(request()->query());
-
-        $subTotal6 = Recovery::with('order')
-            ->whereDate('pay_date', '=', Carbon::now()->format('Y-m-d'))
-            ->where('is_deleted', 0)
-            ->sum('pay');
-
-        $refunds = DB::table('refunds')
-            ->join('methods', 'refunds.payment_type', '=', 'methods.code')
-            ->join('orders', 'refunds.order_id', '=', 'orders.id')
-            ->join('customers', 'customers.id', '=', 'orders.customer_id')
-            ->where('methods.is_deleted', 0)
-            ->where('orders.is_deleted', 0)
-            ->where('customers.is_deleted', 0)
-            ->select(
-                'methods.name as ref_method',
-                'methods.code as ref_code',
-                'customers.name as ref_customer',
-                'orders.invoice_no as ref_invoice',
-                'refunds.payment_type as ref_pay_type',
-                'refunds.refund_date as ref_date',
-                DB::raw('SUM(refunds.pay) as ref_total')
-            )
-            ->whereDate('refunds.refund_date', '=', Carbon::now()->format('Y-m-d'))
-            ->where('refunds.is_deleted', 0)
-            ->groupBy('refunds.order_id')
-            ->paginate($row)
-            ->appends(request()->query());
-
-        $subTotal7 = Refund::with('order')
-            ->whereDate('refund_date', '=', Carbon::now()->format('Y-m-d'))
-            ->where('is_deleted', 0)
-            ->sum('pay');
-
-        $dues = DB::table('dues')
-            ->join('orders', 'dues.order_id', '=', 'orders.id')
-            ->join('customers', 'customers.id', '=', 'orders.customer_id')
-            ->where('orders.is_deleted', 0)
-            ->where('customers.is_deleted', 0)
-            ->select(
-                'orders.invoice_no as due_invoice',
-                'customers.name as due_customer',
-                'dues.due_date as due_date',
-                'dues.comment as due_comment',
-                DB::raw('SUM(dues.due) as due_total')
-            )
-            ->whereDate('dues.due_date', '=', Carbon::now()->format('Y-m-d'))
-            ->where('dues.is_deleted', 0)
-            ->groupBy('order_id')
-            ->paginate($row)
-            ->appends(request()->query());
-        /*
-        $subTotal8 = Due::with('order')
-            ->whereDate('due_date','=', Carbon::now() -> format('Y-m-d'))
-            -> sum('due');
-         */
-        $subTotal8 = Order::whereDate('updated_at', '=', Carbon::now()->format('Y-m-d'))
-            ->where('due', '>', 0)
-            ->sum('due');
-
+        $subTotal7 = $this->getTotalRefunds($from_date, $to_date);
+        $dues = $this->getDues($row);
+        $subTotal8 = $this->getTotalDues($from_date, $to_date);
         $total = $total_paid - $subTotal7 - $subTotal3 - $subTotal4 + $subTotal6;
 
         return view('products.cashflow', [
@@ -2300,16 +2144,16 @@ class OrderController extends Controller
         if (Carbon::parse($fromDate) < Carbon::parse($toDate)) {
             $argument = [$fromDate, $toDate];
             $logic = "whereBetween";
-            $title = "Cashflow from " . Carbon::parse($fromDate)->format('M d, Y') . " to " .
+            $title = "Cash-flow from " . Carbon::parse($fromDate)->format('M d, Y') . " to " .
                 Carbon::parse($toDate)->format('M d, Y');
         } elseif (Carbon::parse($fromDate) == Carbon::parse($toDate)) {
             $argument = $fromDate;
             $logic = "whereDate";
-            $title = "Cashflow of " . Carbon::parse($fromDate)->format('M d, Y');
+            $title = "Cash-flow of " . Carbon::parse($fromDate)->format('M d, Y');
         } else {
             $argument = [$toDate, $fromDate];
             $logic = "whereBetween";
-            $title = "Cashflow from " . Carbon::parse($toDate)->format('M d, Y') . " to " .
+            $title = "Cash-flow from " . Carbon::parse($toDate)->format('M d, Y') . " to " .
                 Carbon::parse($fromDate)->format('M d, Y');
         }
 
@@ -2517,13 +2361,6 @@ class OrderController extends Controller
             ->groupBy('order_id')
             ->paginate($row)
             ->appends(request()->query());
-
-        /* $filt_dues = Due::latest()
-                        ->whereBetween('due_date',[$fromDate, $toDate])
-                        ->groupBy('order_id')
-                        ->get();
-
-        $subTotal8 = $filt_dues->sum('due'); */
 
 
         $subTotal8 = Order::$logic('updated_at', $argument)
@@ -2971,6 +2808,423 @@ class OrderController extends Controller
         ]);
 
         return Redirect::route('orders.allOrders')->with('success', 'Order has been deleted!');
+    }
+
+    /**
+     * @param int $row
+     * @return LengthAwarePaginator
+     */
+    public function getRefunds(int $row): LengthAwarePaginator
+    {
+        return DB::table('refunds')
+            ->join('methods', 'refunds.payment_type', '=', 'methods.code')
+            ->join('orders', 'refunds.order_id', '=', 'orders.id')
+            ->join('customers', 'customers.id', '=', 'orders.customer_id')
+            ->where('methods.is_deleted', 0)
+            ->where('orders.is_deleted', 0)
+            ->where('customers.is_deleted', 0)
+            ->select(
+                'methods.name as ref_method',
+                'methods.code as ref_code',
+                'customers.name as ref_customer',
+                'orders.invoice_no as ref_invoice',
+                'refunds.payment_type as ref_pay_type',
+                'refunds.refund_date as ref_date',
+                DB::raw('SUM(refunds.pay) as ref_total')
+            )
+            ->whereDate('refunds.refund_date', '=', Carbon::now()->format('Y-m-d'))
+            ->where('refunds.is_deleted', 0)
+            ->groupBy('refunds.order_id')
+            ->paginate($row)
+            ->appends(request()->query());
+    }
+
+    /**
+     * @param int $row
+     * @return LengthAwarePaginator
+     */
+    public function getDues(int $row): LengthAwarePaginator
+    {
+        return DB::table('dues')
+            ->join('orders', 'dues.order_id', '=', 'orders.id')
+            ->join('customers', 'customers.id', '=', 'orders.customer_id')
+            ->where('orders.is_deleted', 0)
+            ->where('customers.is_deleted', 0)
+            ->select(
+                'orders.invoice_no as due_invoice',
+                'customers.name as due_customer',
+                'dues.due_date as due_date',
+                'dues.comment as due_comment',
+                DB::raw('SUM(dues.due) as due_total')
+            )
+            ->whereDate('dues.due_date', '=', Carbon::now()->format('Y-m-d'))
+            ->where('dues.is_deleted', 0)
+            ->groupBy('order_id')
+            ->paginate($row)
+            ->appends(request()->query());
+    }
+
+    /**
+     * @param int $row
+     * @return LengthAwarePaginator
+     */
+    public function getRecoveries(int $row): LengthAwarePaginator
+    {
+        return DB::table('recoveries')
+            ->join('methods', 'recoveries.payment_type', '=', 'methods.code')
+            ->join('orders', 'recoveries.order_id', '=', 'orders.id')
+            ->join('customers', 'orders.customer_id', '=', 'customers.id')
+            ->where('methods.is_deleted', 0)
+            ->where('orders.is_deleted', 0)
+            ->where('customers.is_deleted', 0)
+            ->select(
+                'methods.name as rec_method',
+                'methods.code as rec_code',
+                'customers.name as rec_customer',
+                'orders.invoice_no as rec_invoice',
+                'recoveries.payment_type as rec_pay_type',
+                'recoveries.pay_date as rec_date',
+                DB::raw('SUM(recoveries.pay) as rec_total')
+            )
+            ->whereDate('recoveries.pay_date', '=', Carbon::now()->format('Y-m-d'))
+            ->where('recoveries.is_deleted', 0)
+            ->groupBy('order_id')
+            ->paginate($row)
+            ->appends(request()->query());
+    }
+
+    /**
+     * @param int $row
+     * @return LengthAwarePaginator
+     */
+    public function getDamages(int $row): LengthAwarePaginator
+    {
+        return DB::table('products')
+            ->join('categories', 'products.category_id', '=', 'categories.id')
+            ->join('units', 'products.unit_id', '=', 'units.id')
+            ->join('damage_details', 'products.id', '=', 'damage_details.product_id')
+            ->where('categories.is_deleted', 0)
+            ->where('units.is_deleted', 0)
+            ->where('damage_details.is_deleted', 0)
+            ->select(
+                'products.product_name as dam_name',
+                'damage_details.product_id as dam_id',
+                'damage_details.created_at as dam_date',
+                DB::raw('SUM(damage_details.quantity) as dam_quantity'),
+                DB::raw('SUM(damage_details.total) as dam_total')
+            )
+            ->whereDate('damage_details.created_at', '=', Carbon::now()->format('Y-m-d'))
+            ->where('products.is_deleted', 0)
+            ->groupBy('dam_name')
+            ->paginate($row)
+            ->appends(request()->query());
+    }
+
+    /**
+     * @param int $row
+     * @return LengthAwarePaginator
+     */
+    public function getDeposits(int $row): LengthAwarePaginator
+    {
+        return DB::table('deposits')
+            ->join('banks', 'deposits.bank_id', '=', 'banks.id')
+            ->where('banks.is_deleted', 0)
+            ->select(
+                'deposits.deposit_code as dep_code',
+                'banks.name as dep_name',
+                DB::raw('SUM(deposits.amount) as dep_total')
+            )
+            ->whereDate('deposits.created_at', '=', Carbon::now()->format('Y-m-d'))
+            ->where('deposits.is_deleted', 0)
+            ->groupBy('deposits.bank_id')
+            ->paginate($row)
+            ->appends(request()->query());
+    }
+
+    /**
+     * @param int $row
+     * @return LengthAwarePaginator
+     */
+    public function getExpenses(int $row): LengthAwarePaginator
+    {
+        return DB::table('issues')
+            ->join('departments', 'issues.department_id', '=', 'departments.id')
+            ->join('units', 'issues.unit_id', '=', 'units.id')
+            ->join('expense_details', 'issues.id', '=', 'expense_details.issue_id')
+            ->where('departments.is_deleted', 0)
+            ->where('units.is_deleted', 0)
+            ->where('expense_details.is_deleted', 0)
+            ->select(
+                'issues.issue_name as exp_name',
+                'expense_details.issue_id as exp_id',
+                'expense_details.created_at as exp_date',
+                DB::raw('SUM(expense_details.occurence) as exp_quantity'),
+                DB::raw('SUM(expense_details.total) as exp_total')
+            )
+            ->whereDate('expense_details.created_at', '=', Carbon::now()->format('Y-m-d'))
+            ->where('issues.is_deleted', 0)
+            ->groupBy('exp_name')
+            ->paginate($row)
+            ->appends(request()->query());
+    }
+
+    /**
+     * @param int $row
+     * @return LengthAwarePaginator
+     */
+    public function getPurchases(int $row): LengthAwarePaginator
+    {
+        return DB::table('products')
+            ->join('categories', 'products.category_id', '=', 'categories.id')
+            ->join('units', 'products.unit_id', '=', 'units.id')
+            ->join('purchase_details', 'products.id', '=', 'purchase_details.product_id')
+            ->where('categories.is_deleted', 0)
+            ->where('units.is_deleted', 0)
+            ->where('purchase_details.is_deleted', 0)
+            ->select(
+                'products.product_name as pur_name',
+                'purchase_details.product_id as pur_id',
+                'purchase_details.created_at as pur_date',
+                DB::raw('SUM(purchase_details.quantity) as pur_quantity'),
+                DB::raw('SUM(purchase_details.total) as pur_total')
+            )
+            ->whereDate('purchase_details.created_at', '=', Carbon::now()->format('Y-m-d'))
+            ->where('products.is_deleted', 0)
+            ->groupBy('pur_name')
+            ->paginate($row)
+            ->appends(request()->query());
+    }
+
+    /**
+     * @param int $row
+     * @return LengthAwarePaginator
+     */
+    public function getSales(int $row): LengthAwarePaginator
+    {
+        $from_date = request('from_date', Carbon::now()->format('Y-m-d'));
+        $to_date = request('to_date', Carbon::now()->format('Y-m-d'));
+        return DB::table('products')
+            ->join('categories', 'products.category_id', '=', 'categories.id')
+            ->join('units', 'products.unit_id', '=', 'units.id')
+            ->join('order_details', 'products.id', '=', 'order_details.product_id')
+            ->where('categories.is_deleted', 0)
+            ->where('units.is_deleted', 0)
+            ->where('order_details.is_deleted', 0)
+            ->select(
+                'products.product_name as p_name',
+                'products.product_image as p_image',
+                'categories.name as c_name',
+                'units.name as u_name',
+                'order_details.product_id as p_id',
+                'order_details.created_at as o_date',
+                DB::raw('SUM(order_details.quantity) as p_quantity'),
+                DB::raw('SUM(order_details.total) as p_sales')
+            )
+            ->when($from_date, fn($query) => $query->where(DB::raw("DATE(order_details.created_at)"), '>=', $from_date))
+            ->when($to_date, fn($query) => $query->where(DB::raw("DATE(order_details.created_at)"), '<=', $to_date))
+            ->where('products.is_deleted', 0)
+            ->groupBy('p_name')
+            ->paginate($row)
+            ->appends(request()->query());
+    }
+
+    /**
+     * @param mixed $from_date
+     * @param mixed $to_date
+     * @return int|mixed
+     */
+    public function getTotalPaid(mixed $from_date, mixed $to_date): mixed
+    {
+        return Order::query()
+            ->when($from_date, function ($query) use ($from_date) {
+                return $query->whereDate('updated_at', '>=', $from_date);
+            })
+            ->when($to_date, function ($query) use ($to_date) {
+                return $query->whereDate('updated_at', '<=', $to_date);
+            })
+            ->where('is_deleted', 0)
+            ->sum('pay');
+    }
+
+    /**
+     * @param mixed $from_date
+     * @param mixed $to_date
+     * @return int|mixed
+     */
+    public function getTotalDue(mixed $from_date, mixed $to_date): mixed
+    {
+        return Order::query()
+            ->when($from_date, function ($query) use ($from_date) {
+                return $query->whereDate('created_at', '>=', $from_date);
+            })
+            ->when($to_date, function ($query) use ($to_date) {
+                return $query->whereDate('created_at', '<=', $to_date);
+            })
+            ->where('is_deleted', 0)
+            ->sum('due');
+    }
+
+    /**
+     * @param mixed $from_date
+     * @param mixed $to_date
+     * @return int|mixed
+     */
+    public function getTotalRefund(mixed $from_date, mixed $to_date): mixed
+    {
+        return Order::query()
+            ->when($from_date, function ($query) use ($from_date) {
+                return $query->whereDate('updated_at', '>=', $from_date);
+            })
+            ->when($to_date, function ($query) use ($to_date) {
+                return $query->whereDate('updated_at', '<=', $to_date);
+            })
+            ->where('is_deleted', 0)
+            ->where('due', '<', 0)
+            ->sum('due');
+    }
+
+    /**
+     * @param mixed $from_date
+     * @param mixed $to_date
+     * @return int|mixed
+     */
+    public function getSalesValue(mixed $from_date, mixed $to_date): mixed
+    {
+        return OrderDetails::with('product')
+            ->when($from_date, function ($query) use ($from_date) {
+                return $query->whereDate('created_at', '>=', $from_date);
+            })
+            ->when($to_date, function ($query) use ($to_date) {
+                return $query->whereDate('created_at', '<=', $to_date);
+            })
+            ->where('is_deleted', 0)
+            ->sum('total');
+    }
+
+    /**
+     * @param mixed $from_date
+     * @param mixed $to_date
+     * @return int|mixed
+     */
+    public function getPurchasesValue(mixed $from_date, mixed $to_date): mixed
+    {
+        return PurchaseDetails::with('product')
+            ->when($from_date, function ($query) use ($from_date) {
+                return $query->whereDate('created_at', '>=', $from_date);
+            })
+            ->when($to_date, function ($query) use ($to_date) {
+                return $query->whereDate('created_at', '<=', $to_date);
+            })
+            ->where('is_deleted', 0)
+            ->sum('total');
+    }
+
+    /**
+     * @param mixed $from_date
+     * @param mixed $to_date
+     * @return int|mixed
+     */
+    public function getTotalExpenses(mixed $from_date, mixed $to_date): mixed
+    {
+        return ExpenseDetails::with('issue')
+            ->when($from_date, function ($query) use ($from_date) {
+                return $query->whereDate('created_at', '>=', $from_date);
+            })
+            ->when($to_date, function ($query) use ($to_date) {
+                return $query->whereDate('created_at', '<=', $to_date);
+            })
+            ->where('is_deleted', 0)
+            ->sum('total');
+    }
+
+    /**
+     * @param mixed $from_date
+     * @param mixed $to_date
+     * @return int|mixed
+     */
+    public function getTotalDeposits(mixed $from_date, mixed $to_date): mixed
+    {
+        return Deposit::with('bank')
+            ->when($from_date, function ($query) use ($from_date) {
+                return $query->whereDate('created_at', '>=', $from_date);
+            })
+            ->when($to_date, function ($query) use ($to_date) {
+                return $query->whereDate('created_at', '<=', $to_date);
+            })
+            ->where('is_deleted', 0)
+            ->sum('amount');
+    }
+
+    /**
+     * @param mixed $from_date
+     * @param mixed $to_date
+     * @return int|mixed
+     */
+    public function getTotalDamages(mixed $from_date, mixed $to_date): mixed
+    {
+        return DamageDetails::with('product')
+            ->when($from_date, function ($query) use ($from_date) {
+                return $query->whereDate('created_at', '>=', $from_date);
+            })
+            ->when($to_date, function ($query) use ($to_date) {
+                return $query->whereDate('created_at', '<=', $to_date);
+            })
+            ->where('is_deleted', 0)
+            ->sum('total');
+    }
+
+    /**
+     * @param mixed $from_date
+     * @param mixed $to_date
+     * @return int|mixed
+     */
+    public function getTotalRecoveries(mixed $from_date, mixed $to_date): mixed
+    {
+        return Recovery::with('order')
+            ->when($from_date, function ($query) use ($from_date) {
+                return $query->whereDate('created_at', '>=', $from_date);
+            })
+            ->when($to_date, function ($query) use ($to_date) {
+                return $query->whereDate('created_at', '<=', $to_date);
+            })
+            ->where('is_deleted', 0)
+            ->sum('pay');
+    }
+
+    /**
+     * @param mixed $from_date
+     * @param mixed $to_date
+     * @return int|mixed
+     */
+    public function getTotalRefunds(mixed $from_date, mixed $to_date): mixed
+    {
+        return Refund::with('order')
+            ->when($from_date, function ($query) use ($from_date) {
+                return $query->whereDate('created_at', '>=', $from_date);
+            })
+            ->when($to_date, function ($query) use ($to_date) {
+                return $query->whereDate('created_at', '<=', $to_date);
+            })
+            ->where('is_deleted', 0)
+            ->sum('pay');
+    }
+
+    /**
+     * @param mixed $from_date
+     * @param mixed $to_date
+     * @return int|mixed
+     */
+    public function getTotalDues(mixed $from_date, mixed $to_date): mixed
+    {
+        return Order::query()
+            ->when($from_date, function ($query) use ($from_date) {
+                return $query->whereDate('created_at', '>=', $from_date);
+            })
+            ->when($to_date, function ($query) use ($to_date) {
+                return $query->whereDate('created_at', '<=', $to_date);
+            })
+            ->where('due', '>', 0)
+            ->sum('due');
     }
 
 }

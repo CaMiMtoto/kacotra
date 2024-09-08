@@ -27,12 +27,12 @@
         </div>
         <div class="col-md-6">
 
-            <form action="{{ route('orders.filterCashReport') }}" method="get">
+            <form action="{{ route('orders.dailyCashReport') }}" method="get">
                 <div class="input-group">
                     <span class="input-group-text">From</span>
-                    <input type="date" name="from_date" aria-label="From" class="form-control" {{-- value="{{ $request->from_date }}" --}}>
+                    <input type="date" name="from_date" aria-label="From" class="form-control"  value="{{ request('from_date') }}" >
                     <span class="input-group-text">To</span>
-                    <input type="date" name="to_date" aria-label="To" class="form-control" {{-- value="{{ $request->to_date }}" --}}>
+                    <input type="date" name="to_date" aria-label="To" class="form-control" value="{{ request('to_date') }}">
                     <button class="btn btn-primary" type="submit" id="button-addon1">Filter</button>
                 </div>
             </form>

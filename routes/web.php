@@ -7,6 +7,7 @@ use App\Http\Controllers\DamageController;
 use App\Http\Controllers\DefaultController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\DepositController;
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\IssueController;
 use App\Http\Controllers\MethodController;
 use App\Http\Controllers\OrderController;

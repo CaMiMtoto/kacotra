@@ -21,28 +21,14 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
 
-        User::factory()->create([
-            'name' => 'Admin',
-            'username' => 'admin',
-            'email' => 'admin@gmail.com',
+        $this->call([
+            UserSeeder::class,
+            PaymentMethodSeeder::class,
+            CustomerSeeder::class,
+            SupplierSeeder::class,
+            CategorySeeder::class,
+            UnitSeeder::class,
+            ProductSeeder::class,
         ]);
-
-        Customer::factory(15)->create();
-        Supplier::factory(15)->create();
-
-        Category::factory(5)->create();
-        Unit::factory(5)->create();
-
-        for ($i=0; $i < 10; $i++) {
-            Product::factory()->create([
-                'product_code' => IdGenerator::generate([
-                    'table' => 'products',
-                    'field' => 'product_code',
-                    'length' => 4,
-                    'prefix' => 'PC'
-                ]),
-            ]);
-        }
-
     }
 }
