@@ -19,6 +19,18 @@ The system is built using PHP(Laravel) and MySQL.
 - Manage Units
 - Manage Users
 
+## Requirements
+
+- PHP >= 8.0 - for windows download latest xampp (https://www.apachefriends.org/)
+- Composer - for windows download composer (https://getcomposer.org/Composer-Setup.exe)
+- MySQL - for windows it comes with xampp
+    - Laravel 10.x -
+        ````bash 
+      composer global require laravel/installer
+      ````
+
+- Node.js - for windows download node.js (https://nodejs.org/en/download/)
+
 ## 🛠️ Installation Steps
 
 1. Clone the repository
@@ -39,7 +51,7 @@ cd kacotra
 composer install
 ```
 
-4. Create a copy of the .env file 
+4. Create a copy of the .env file
 
 ```bash
 cp .env.example .env
