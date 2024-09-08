@@ -99,7 +99,7 @@ class Order extends Model
         'user_updated',
         'dues',
     ];
-    protected $dates = ['from_date', 'to_date'];
+    protected array $dates = ['from_date', 'to_date'];
 
     public static $rules = array(
         'fromDate' => 'regex:/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/ | date_format:"Y-m-d"',

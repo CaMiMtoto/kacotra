@@ -484,7 +484,7 @@ class OrderController extends Controller
             ]);
 
             // Insert Order and get ID
-            $order = Order::create($validatedData);
+            $order = Order::query()->create($validatedData);
 
             // Prepare and Insert Order Details
             $contents = Cart::content();
@@ -3001,29 +3001,35 @@ class OrderController extends Controller
      */
     public function getSales(int $row): LengthAwarePaginator
     {
-        $from_date = request('from_date', Carbon::now()->format('Y-m-d'));
-        $to_date = request('to_date', Carbon::now()->format('Y-m-d'));
+        $from_date = request('from_date', Carbon::now()->startOfDay()->format('Y-m-d'));
+        $to_date = request('to_date', Carbon::now()->endOfDay()->format('Y-m-d'));
+
         return DB::table('products')
             ->join('categories', 'products.category_id', '=', 'categories.id')
             ->join('units', 'products.unit_id', '=', 'units.id')
             ->join('order_details', 'products.id', '=', 'order_details.product_id')
+            ->join('orders', 'order_details.order_id', '=', 'orders.id')
             ->where('categories.is_deleted', 0)
             ->where('units.is_deleted', 0)
             ->where('order_details.is_deleted', 0)
+            ->where('products.is_deleted', 0)
             ->select(
                 'products.product_name as p_name',
                 'products.product_image as p_image',
                 'categories.name as c_name',
                 'units.name as u_name',
                 'order_details.product_id as p_id',
-                'order_details.created_at as o_date',
+                DB::raw('DATE(orders.updated_at) as o_date'), // Use the order's created date
                 DB::raw('SUM(order_details.quantity) as p_quantity'),
                 DB::raw('SUM(order_details.total) as p_sales')
             )
-            ->when($from_date, fn($query) => $query->where(DB::raw("DATE(order_details.created_at)"), '>=', $from_date))
-            ->when($to_date, fn($query) => $query->where(DB::raw("DATE(order_details.created_at)"), '<=', $to_date))
-            ->where('products.is_deleted', 0)
-            ->groupBy('p_name')
+            ->when($from_date, function ($query) use ($from_date) {
+                return $query->whereDate('orders.updated_at', '>=', $from_date); // Filter by order's created date
+            })
+            ->when($to_date, function ($query) use ($to_date) {
+                return $query->whereDate('orders.updated_at', '<=', $to_date); // Filter by order's created date
+            })
+            ->groupBy('products.id') // Ensure grouping by unique product ID
             ->paginate($row)
             ->appends(request()->query());
     }
@@ -3055,10 +3061,10 @@ class OrderController extends Controller
     {
         return Order::query()
             ->when($from_date, function ($query) use ($from_date) {
-                return $query->whereDate('created_at', '>=', $from_date);
+                return $query->whereDate('updated_at', '>=', $from_date);
             })
             ->when($to_date, function ($query) use ($to_date) {
-                return $query->whereDate('created_at', '<=', $to_date);
+                return $query->whereDate('updated_at', '<=', $to_date);
             })
             ->where('is_deleted', 0)
             ->sum('due');
