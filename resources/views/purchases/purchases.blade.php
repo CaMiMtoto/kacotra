@@ -126,7 +126,8 @@
                                                 <a href="{{ route('purchases.purchaseDetails', $purchase->id) }}" class="btn btn-outline-success btn-sm mx-1"><i class="fa-solid fa-eye"></i></a>
 
                                                 @if (auth()->user()->role == 'admin')
-                                                    <a href="{{ route('purchases.deletePurchase', $purchase->id) }}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this record?')"><i class="far fa-trash-alt"></i></a>
+                                                    <a href="{{ route('purchases.deletePurchase', $purchase->id) }}" class="btn btn-outline-danger btn-sm"
+                                                       onclick="return confirm('Are you sure you want to delete this record?')"><i class="far fa-trash-alt"></i></a>
                                                 @endif
                                             </div>
                                         </td>

@@ -25,13 +25,13 @@ class PurchaseController extends Controller
      */
     public function allPurchases()
     {
-        $row = (int) request('row', 10);
+        $row = (int)request('row', 10);
 
         if ($row < 1 || $row > 100) {
             abort(400, 'The per-page parameter must be an integer between 1 and 100.');
         }
 
-        $purchases = Purchase::where('is_deleted',0)
+        $purchases = Purchase::where('is_deleted', 0)
             ->orderByDesc('updated_at')
             ->orderByDesc('created_at')
             ->sortable()
@@ -48,14 +48,14 @@ class PurchaseController extends Controller
      */
     public function approvedPurchases()
     {
-        $row = (int) request('row', 10);
+        $row = (int)request('row', 10);
 
         if ($row < 1 || $row > 100) {
             abort(400, 'The per-page parameter must be an integer between 1 and 100.');
         }
 
         $purchases = Purchase::where('purchase_status', 1) // 1 = approved
-            ->where('is_deleted',0)
+        ->where('is_deleted', 0)
             ->orderByDesc('updated_at')
             ->orderByDesc('created_at')
             ->sortable()
@@ -72,14 +72,14 @@ class PurchaseController extends Controller
      */
     public function pendingPurchases()
     {
-        $row = (int) request('row', 10);
+        $row = (int)request('row', 10);
 
         if ($row < 1 || $row > 100) {
             abort(400, 'The per-page parameter must be an integer between 1 and 100.');
         }
 
         $purchases = Purchase::where('purchase_status', 0) // 1 = pending
-            ->where('is_deleted',0)
+        ->where('is_deleted', 0)
             ->orderByDesc('updated_at')
             ->orderByDesc('created_at')
             ->sortable()
@@ -94,16 +94,16 @@ class PurchaseController extends Controller
     /**
      * Display a purchase details.
      */
-    public function purchaseDetails(String $purchase_id)
+    public function purchaseDetails(string $purchase_id)
     {
-        $purchase = Purchase::with(['user_created','user_updated'])
+        $purchase = Purchase::with(['user_created', 'user_updated'])
             ->where('id', $purchase_id)
-            ->where('is_deleted',0)
+            ->where('is_deleted', 0)
             ->first();
 
         $purchaseDetails = PurchaseDetails::with('product')
             ->where('purchase_id', $purchase_id)
-            ->where('is_deleted',0)
+            ->where('is_deleted', 0)
             ->orderBy('id')
             ->get();
 
@@ -119,7 +119,7 @@ class PurchaseController extends Controller
     public function createPurchase()
     {
         return view('purchases.create-purchase', [
-            'categories' => Category::where('is_deleted',0)->get(),
+            'categories' => Category::where('is_deleted', 0)->get(),
         ]);
     }
 
@@ -153,7 +153,7 @@ class PurchaseController extends Controller
         // Create Purchase Details
         $pDetails = array();
         $products = count($request->product_id);
-        for ($i=0; $i < $products; $i++) {
+        for ($i = 0; $i < $products; $i++) {
             $pDetails['purchase_id'] = $purchase_id;
             $pDetails['product_id'] = $request->product_id[$i];
             $pDetails['quantity'] = $request->quantity[$i];
@@ -176,60 +176,60 @@ class PurchaseController extends Controller
 
         // after purchase approved, add stock product
         $products = PurchaseDetails::where('purchase_id', $purchase_id)->get();
-        $purchase = Purchase::where('id',$purchase_id)->first();
+        $purchase = Purchase::where('id', $purchase_id)->first();
         $reference = $purchase->purchase_no;
 
         foreach ($products as $product) {
-            $isOpened = Stock::where('product_id', $product -> product_id)
-            ->whereDate('stock_date', Carbon::now())
-            ->first();
+            $isOpened = Stock::where('product_id', $product->product_id)
+                ->whereDate('stock_date', Carbon::now())
+                ->first();
 
-            $cost = $products->where('product_id', $product -> product_id)->sum('total');
+            $cost = $products->where('product_id', $product->product_id)->sum('total');
 
-            if(empty($isOpened) || $isOpened == null) {
-                $opening = Product::where('id', $product -> product_id)
+            if (empty($isOpened) || $isOpened == null) {
+                $opening = Product::where('id', $product->product_id)
                     ->first();
 
-                $initialCost = $opening -> stock * $opening -> selling_price;
+                $initialCost = $opening->stock * $opening->selling_price;
 
                 Stock::insert([
                     'reference' => $reference,
                     'product_id' => $product->product_id,
-                    'opening' => $opening -> stock,
-                    'buying_price' => $opening -> buying_price,
-                    'stock_value' => $opening -> stock * $opening -> selling_price,
+                    'opening' => $opening->stock,
+                    'buying_price' => $opening->buying_price,
+                    'stock_value' => $opening->stock * $opening->selling_price,
                     'sales' => 0,
                     'sale_value' => 0,
-                    'purchases' => $product -> quantity,
-                    'purchase_value' => $product -> total,
+                    'purchases' => $product->quantity,
+                    'purchase_value' => $product->total,
                     'damages' => 0,
                     'damage_value' => 0,
                     'stock_date' => Carbon::now()->format('Y-m-d'),
-                    'closing' => $opening -> stock + $product->quantity,
-                    'closing_value' => ($opening -> stock + $product->quantity) * $opening -> selling_price,
+                    'closing' => $opening->stock + $product->quantity,
+                    'closing_value' => ($opening->stock + $product->quantity) * $opening->selling_price,
                     'created_at' => Carbon::now()
                 ]);
             } else {
-                $currentStock = Stock::where('product_id', $product -> product_id)
+                $currentStock = Stock::where('product_id', $product->product_id)
                     ->whereDate('stock_date', Carbon::now())
                     ->first();
 
-                $c_product = Product::where('id', $product -> product_id)->first();
+                $c_product = Product::where('id', $product->product_id)->first();
 
-                Stock::where('product_id', $product -> product_id)
+                Stock::where('product_id', $product->product_id)
                     ->whereDate('stock_date', Carbon::now())
                     ->update([
-                        'purchases' => $currentStock -> purchases + $product -> quantity,
-                        'purchase_value' => $currentStock -> purchase_value + $product -> total,
-                        'closing' => $currentStock -> closing + $product -> quantity,
-                        'closing_value' => ($currentStock -> closing + $product -> quantity) * $c_product -> selling_price,
+                        'purchases' => $currentStock->purchases + $product->quantity,
+                        'purchase_value' => $currentStock->purchase_value + $product->total,
+                        'closing' => $currentStock->closing + $product->quantity,
+                        'closing_value' => ($currentStock->closing + $product->quantity) * $c_product->selling_price,
                     ]);
             }
             Product::where('id', $product->product_id)
-                    ->update([
-                        'stock' => DB::raw('stock +' .$product->quantity),
-                        'buying_price' => $product -> unitcost
-                    ]);
+                ->update([
+                    'stock' => DB::raw('stock +' . $product->quantity),
+                    'buying_price' => $product->unitcost
+                ]);
         }
 
         Purchase::findOrFail($purchase_id)
@@ -241,30 +241,29 @@ class PurchaseController extends Controller
         /**
          * Record refund to journal
          */
-        $credit = $purchase -> total_amount;
-        $debit = $purchase -> total_amount;
-        $user = $purchase -> created_by;
+        $credit = $purchase->total_amount;
+        $debit = $purchase->total_amount;
+        $user = $purchase->created_by;
         $journal = Journal::whereDate('journal_date', Carbon::now()->format('Y-m-d'))
-                                    ->first();
+            ->first();
 
         $journals = Journal::all();
 
         $comment = "Purchase";
 
-        if (empty($journal) || $journal == null)
-        {
-            if ($journals->count()==0) {
+        if (empty($journal) || $journal == null) {
+            if ($journals->count() == 0) {
                 $opening_value = 0;
                 $balance = $debit - $credit;
             } else {
-                $opening_value = $journals[$journals->count()-1] -> balance;
+                $opening_value = $journals[$journals->count() - 1]->balance;
                 $balance = $opening_value + $debit - $credit;
             }
         } else {
-            $opening_value = $journal -> opening;
-            $balance = $journals[$journals->count()-1] -> balance + $debit - $credit;
+            $opening_value = $journal->opening;
+            $balance = $journals[$journals->count() - 1]->balance + $debit - $credit;
         }
-        $description = "Purchase from " . $purchase -> supplier;
+        $description = "Purchase from " . $purchase->supplier;
         Journal::insert([
             'user_id' => $user,
             'journal_date' => Carbon::now()->format('Y-m-d'),
@@ -283,46 +282,60 @@ class PurchaseController extends Controller
 
     /**
      * Handle delete a purchase
+     * @throws \Throwable
      */
-    public function deletePurchase(String $purchase_id)
+    public function deletePurchase(string $purchase_id)
     {
-        $purchase = Purchase::getSingle($purchase_id);
-        $purchase -> is_deleted = 1;
-        $purchase -> save();
-        /*
-        Purchase::where([
-            'id' => $purchase_id,
-            'purchase_status' => '0'
-        ])->delete();
-         */
-        PurchaseDetails::where('purchase_id', $purchase ->id)->update([
-            'is_deleted' => 1
-        ]);
+        DB::beginTransaction();
 
-        Stock::where('reference',$purchase->purchase_no)->update([
-            'is_deleted' => 1
-        ]);
+        try {
+            $purchase = Purchase::getSingle($purchase_id);
+            if (!$purchase) {
+                return Redirect::back()->with('error', 'Purchase not found.');
+            }
 
-        Journal::where('reference',$purchase->purchase_no)->update([
-            'is_deleted' => 1
-        ]);
 
-        return Redirect::route('purchases.allPurchases')->with('success', 'Purchase has been deleted!');
+            if (strtolower($purchase->purchase_status) != 0) {
+                return Redirect::back()->with('error', 'Purchase is not pending. You cannot delete it.');
+            }
+
+
+            // Delete related purchase details
+            PurchaseDetails::where('purchase_id', $purchase->id)->delete();
+
+            // Delete related stock records
+            Stock::where('reference', $purchase->purchase_no)->delete();
+
+            // Delete related journal entries
+            Journal::where('reference', $purchase->purchase_no)->delete();
+
+            // Delete the purchase
+            $purchase->delete();
+
+            DB::commit();
+
+            return Redirect::route('purchases.allPurchases')->with('success', 'Purchase has been deleted!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return Redirect::back()->with('error', 'An error occurred while deleting the purchase.');
+        }
     }
+
 
     /**
      * Display an all purchases.
      */
     public function dailyPurchaseReport()
     {
-        $row = (int) request('row', 10);
+        $row = (int)request('row', 10);
 
         if ($row < 1 || $row > 100) {
             abort(400, 'The per-page parameter must be an integer between 1 and 100.');
         }
 
         $purchases = Purchase::where('purchase_date', Carbon::now()->format('Y-m-d')) // 1 = approved
-            ->orderByDesc('updated_at')
+        ->orderByDesc('updated_at')
             ->orderByDesc('created_at')
             ->sortable()
             ->paginate($row)
@@ -365,9 +378,9 @@ class PurchaseController extends Controller
         $purchases = DB::table('purchase_details')
             ->join('products', 'purchase_details.product_id', '=', 'products.id')
             ->join('purchases', 'purchase_details.purchase_id', '=', 'purchases.id')
-            ->whereBetween('purchases.purchase_date',[$sDate,$eDate])
-            ->where('purchases.purchase_status','1')
-            ->select( 'purchases.purchase_no', 'purchases.purchase_date', 'purchase','products.product_code', 'products.product_name', 'purchase_details.quantity', 'purchase_details.unitcost', 'purchase_details.total')
+            ->whereBetween('purchases.purchase_date', [$sDate, $eDate])
+            ->where('purchases.purchase_status', '1')
+            ->select('purchases.purchase_no', 'purchases.purchase_date', 'purchase', 'products.product_code', 'products.product_name', 'purchase_details.quantity', 'purchase_details.unitcost', 'purchase_details.total')
             ->get();
 
 
@@ -382,8 +395,7 @@ class PurchaseController extends Controller
             'Total',
         );
 
-        foreach($purchases as $purchase)
-        {
+        foreach ($purchases as $purchase) {
             $purchase_array[] = array(
                 'Date' => $purchase->purchase_date,
                 'No Purchase' => $purchase->purchase_no,

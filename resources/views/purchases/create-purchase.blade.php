@@ -190,22 +190,22 @@
 <script type="text/javascript">
     $(document).ready(function(){
         $(document).on("click",".addEventMore", function() {
-            var product_id = $('#product_id').val();
-            var product_name = $('#product_id').find('option:selected').text();
+            const product_id = $('#product_id').val();
+            const product_name = $('#product_id').find('option:selected').text();
 
             if(product_id == ''){
                 $.notify("Product Field is Required" ,  {globalPosition: 'top right', className:'error' });
                 return false;
             }
 
-            var source = $("#document-template").html();
-            var tamplate = Handlebars.compile(source);
-            var data = {
-                product_id:product_id,
-                product_name:product_name
+            const source = $("#document-template").html();
+            const tamplate = Handlebars.compile(source);
+            const data = {
+                product_id: product_id,
+                product_name: product_name
 
             };
-            var html = tamplate(data);
+            const html = tamplate(data);
             $("#addRow").append(html);
         });
 
@@ -215,9 +215,9 @@
         });
 
         $(document).on('keyup click','.unitcost,.quantity', function(){
-            var unitcost = $(this).closest("tr").find("input.unitcost").val();
-            var quantity = $(this).closest("tr").find("input.quantity").val();
-            var total = unitcost * quantity;
+            const unitcost = $(this).closest("tr").find("input.unitcost").val();
+            const quantity = $(this).closest("tr").find("input.quantity").val();
+            const total = unitcost * quantity;
             $(this).closest("tr").find("input.total").val(total);
             totalAmountPrice();
         });
@@ -225,34 +225,29 @@
 
         // Calculate sum of amount in invoice
         function totalAmountPrice(){
-            var sum = 0;
+            let sum = 0;
             $(".total").each(function(){
-                var value = $(this).val();
+                const value = $(this).val();
                 if(!isNaN(value) && value.length != 0){
                     sum += parseFloat(value);
                 }
             });
             $('#total_amount').val(sum);
         }
-    });
-</script>
-
-<!-- Get Products by category -->
-<script type="text/javascript">
-    $(function(){
-        $(document).on('change','#category_id',function(){
-            var category_id = $(this).val();
-            $.ajax({
+       $(document).on('change','#category_id',function(){
+           const category_id = $(this).val();
+           $.ajax({
                 url:"{{ route('get-all-product') }}",
                 type: "GET",
                 data:{category_id:category_id},
                 success:function(data){
-                    var html = '';
-                    $.each(data,function(key,v){
-                        html += '<option value=" '+v.id+' "> '+v.product_name+'</option>';
+                    let html = '<option disabled>Select a product:</option>'; // default option
+                    $.each(data, function(key, v) {
+                        html += '<option value="'+v.id+'">'+v.product_name+'</option>';
                     });
                     $('#product_id').html(html);
                 }
+
             })
         });
     });
