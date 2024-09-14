@@ -11,6 +11,7 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\IssueController;
 use App\Http\Controllers\MethodController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OrderPaymentController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
@@ -141,6 +142,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders/report/export', [OrderController::class, 'getOrderReport'])->name('orders.getOrderReport');
     Route::post('/orders/report/export', [OrderController::class, 'exportOrderReport'])->name('orders.exportOrderReport');
 
+    Route::get('/orders/payments/report', [OrderPaymentController::class, 'report'])->name('orders.payments.report');
+    Route::get('/orders/payments/export', [OrderPaymentController::class, 'exportExcel'])->name('orders.payments.export');
+
     // Default Controller
     Route::get('/get-all-product', [DefaultController::class, 'GetProducts'])->name('get-all-product');
     Route::get('/get-all-issue', [DefaultController::class, 'GetIssues'])->name('get-all-issue');
@@ -181,14 +185,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/damages', [DamageController::class, 'storeDamage'])->name('damages.storeDamage');
     Route::put('/damages/update', [DamageController::class, 'updateDamage'])->name('damages.updateDamage');
     Route::get('/damages/details/{damage_id}', [DamageController::class,
-    'damageDetails'])->name('damages.damageDetails');
+        'damageDetails'])->name('damages.damageDetails');
     Route::delete('/damages/delete/{damage_id}', [DamageController::class,
-    'deleteDamage'])->name('damages.deleteDamage');
+        'deleteDamage'])->name('damages.deleteDamage');
 
     Route::get('/damages/report', [DamageController::class, 'dailyDamageReport'])->name('damages.dailyDamageReport');
     Route::get('/damages/report/export', [DamageController::class, 'getDamageReport'])->name('damages.getDamageReport');
     Route::post('/damages/report/export', [DamageController::class,
-    'exportDamageReport'])->name('damages.exportDamageReport');
+        'exportDamageReport'])->name('damages.exportDamageReport');
 
 
     // User Management
@@ -196,4 +200,4 @@ Route::middleware('auth')->group(function () {
     Route::put('/user/change-password/{username}', [UserController::class, 'updatePassword'])->name('users.updatePassword');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

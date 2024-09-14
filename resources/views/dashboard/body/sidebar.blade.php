@@ -17,8 +17,10 @@
                     Reports
                     <div class="sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                 </a>
+
                 <div class="collapse" id="orderPages" data-bs-parent="#accordionSidenav">
                     <nav class="sidenav-menu-nested nav accordion" id="accordionSidenavPagesCompletes">
+
                         <!-- Nested Sidenav Accordion (Pages -> Orders)-->
                         <a class="nav-link collapsed" href="javascript:void(0);" data-bs-toggle="collapse"
                            data-bs-target="#pagesCollapseCompletes" aria-expanded="false"
@@ -286,6 +288,12 @@
                 </a>
                 <div class="collapse" id="orderPages" data-bs-parent="#accordionSidenav">
                     <nav class="sidenav-menu-nested nav accordion" id="accordionSidenavPagesCompletes">
+
+                        <a class="nav-link {{ Request::is('orders/payments/report*') ? 'active' : '' }}"
+                           href="{{ route('orders.payments.report') }}">
+                            <div class="nav-link-icon"><i class="fa-solid fa-moon"></i></div>
+                            Payment Report
+                        </a>
                         <!-- Nested Sidenav Accordion (Pages -> Orders)-->
                         <a class="nav-link collapsed" href="javascript:void(0);" data-bs-toggle="collapse"
                            data-bs-target="#pagesCollapseCompletes" aria-expanded="false"

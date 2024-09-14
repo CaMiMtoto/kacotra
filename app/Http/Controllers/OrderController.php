@@ -25,6 +25,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Gloudemans\Shoppingcart\Facades\Cart;
+use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Writer\Xls;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Haruncpi\LaravelIdGenerator\IdGenerator;
@@ -458,6 +459,17 @@ class OrderController extends Controller
         $validatedData = $request->validated();
 
         DB::transaction(function () use ($validatedData) {
+
+            $paymentMethod = Method::query()->where('code', $validatedData['payment_type'])->first();
+            if ($paymentMethod == null) {
+                $paymentMethod = Method::query()->create([
+                    'code' => $validatedData['payment_type'],
+                    'name' => $validatedData['payment_type'],
+                    'slug' => Str::slug($validatedData['payment_type']) . Str::random(6),
+                    'created_at' => Carbon::now(),
+                    'updated_at' => Carbon::now(),
+                ]);
+            }
             // Generate Invoice Number
             $invoice_no = IdGenerator::generate([
                 'table' => 'orders',
@@ -509,6 +521,19 @@ class OrderController extends Controller
                 Product::where('id', $content->id)
                     ->where('is_deleted', 0)
                     ->decrement('stock', $content->qty);
+            }
+            // save order payment
+            if ($validatedData['payment_type'] != 'Due') {
+                $order->payments()
+                    ->create([
+                        'method_id' => $paymentMethod->id,
+                        'payment_type' => $validatedData['payment_type'],
+                        'pay' => $validatedData['pay'],
+                        'due' => $order->due,
+                        'created_at' => Carbon::now(),
+                        'updated_at' => Carbon::now(),
+                        'payment_date' => Carbon::now(),
+                    ]);
             }
 
             // Clear Cart

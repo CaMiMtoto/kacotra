@@ -25,7 +25,21 @@ class ValidateCreateOrderRequest extends FormRequest
         return [
             'customer_id' => ['required', 'numeric', 'exists:customers,id'],
             "payment_type" => ['required'],
-            "pay" => ['required', 'numeric'],
+            "pay" => ['required', 'numeric',
+                // validate pay to be greater than 0 if payment type is not Due
+                function ($attribute, $value, $fail) {
+                    if ($this->payment_type != 'Due' && $value <= 0) {
+                        $fail('The amount to pay must be greater than 0.');
+                    }
+                },
+                // validate pay to be equal to 0 if payment type is Due
+                function ($attribute, $value, $fail) {
+                    if ($this->payment_type == 'Due' && $value != 0) {
+                        $fail('The amount to pay must be 0.');
+                    }
+                },
+
+            ],
         ];
     }
 }
