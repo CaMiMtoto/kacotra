@@ -11,9 +11,7 @@ class DefaultController extends Controller
     // Get all products by category
     public function GetProducts(Request $request){
         $category_id = $request->category_id;
-        $allProduct = Product::where('category_id',$category_id)->get();
-
-        return response()->json($allProduct);
+        return Product::where('category_id',$category_id)->get();
     }
     // Get all products by department
     public function GetIssues(Request $request){
