@@ -119,6 +119,10 @@ class PosController extends Controller
         $customer = Customer::where('id', $validatedData['customer_id'])->first();
         $carts = Cart::content();
 
+        if ($carts->isEmpty()) {
+            return Redirect::back()->with('error', 'Cart is empty! Please add product to cart first.');
+        }
+
         return view('pos.create', [
             'customer' => $customer,
             'carts' => $carts
