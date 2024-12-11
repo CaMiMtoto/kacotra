@@ -215,6 +215,7 @@
 <!-- Get Products by category -->
 <script type="text/javascript">
     $(function(){
+/*
         $(document).on('change','#category_id',function(){
             var category_id = $(this).val();
             $.ajax({
@@ -230,6 +231,31 @@
                 }
             })
         });
+*/
+
+        document.addEventListener('change', function(e) {
+            if (e.target && e.target.id === 'category_id') {
+                var category_id = e.target.value;
+                fetch(`{{ route('get-all-product') }}?category_id=${category_id}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json(); // Assuming the response is in JSON format
+                    })
+                    .then(data => {
+                        var html = '';
+                        data.forEach(v => {
+                            html += `<option value="${v.id}">${v.product_name}</option>`;
+                        });
+                        document.getElementById('product_id').innerHTML = html;
+                    })
+                    .catch(error => {
+                        console.error('There was a problem with the fetch operation:', error);
+                    });
+            }
+        });
+
     });
 
 </script>
