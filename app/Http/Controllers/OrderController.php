@@ -492,7 +492,7 @@ class OrderController extends Controller
                 'updated_by' => auth()->user()->id,
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
-                'is_confirmed' => 1,
+                'is_confirmed' => 0,
             ]);
 
             // Insert Order and get ID
