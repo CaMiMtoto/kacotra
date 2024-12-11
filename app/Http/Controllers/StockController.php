@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\Stock;
 use App\Models\Damage;
@@ -10,6 +11,7 @@ use App\Models\Order;
 use App\Models\OrderDetails;
 use App\Models\Purchase;
 use App\Models\PurchaseDetails;
+use App\Models\Unit;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
@@ -98,7 +100,9 @@ class StockController extends Controller
     {
         return view('stocks.edit', [
             'products' => Product::all(),
-            'stock' => $stock
+            'stock' => $stock,
+            'categories' => Category::all(),
+            'units' => Unit::all()
         ]);
     }
 
@@ -133,9 +137,9 @@ class StockController extends Controller
 
         return Redirect::route('stocks.index')->with('success', 'Stock has been deleted!');
     }
-    
+
     /**
-     * Delete stock 
+     * Delete stock
      */
 
     public function deleteStock($id)
@@ -148,7 +152,7 @@ class StockController extends Controller
         {
             $order = Order::where('invoice_no',$stock->reference)
                         ->first();
-            
+
             $products = OrderDetails::where('order_id', $order->id)
                                     ->get();
             foreach($products as $product)
@@ -165,7 +169,7 @@ class StockController extends Controller
                         ->update([
                             'stock' => $new_stock
                         ]);
-            }            
+            }
         }
 
         if(Str::contains($stock->reference, 'PRS-'))

@@ -77,6 +77,10 @@ class Product extends Model
         'unit'
     ];
 
+    protected $appends = [
+        'image_url'
+    ];
+
     public function category(){
         return $this->belongsTo(Category::class, 'category_id');
     }
@@ -94,5 +98,10 @@ class Product extends Model
     static public function getSingle($id)
     {
         return self::find($id);
+    }
+
+    public function getImageUrlAttribute(): string
+    {
+        return \Storage::url('public/products/'.$this->product_image);
     }
 }
