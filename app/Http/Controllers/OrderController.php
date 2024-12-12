@@ -545,11 +545,12 @@ class OrderController extends Controller
 
     /**
      * Handle update a status order
+     * @throws Throwable
      */
     public function updateOrder(Request $request)
     {
         $order_id = $request->id;
-
+        DB::beginTransaction();
         $order = Order::where('id', $order_id)
             ->where('is_deleted', 0)
             ->first();
@@ -613,9 +614,9 @@ class OrderController extends Controller
                 }
             }
 
-/*            Product::where('id', $product->product_id)
-                ->where('is_deleted', 0)
-                ->update(['stock' => DB::raw('stock-' . $product->quantity)]);*/
+            /*            Product::where('id', $product->product_id)
+                            ->where('is_deleted', 0)
+                            ->update(['stock' => DB::raw('stock-' . $product->quantity)]);*/
         }
 
         Order::findOrFail($order_id)->update([
@@ -731,7 +732,7 @@ class OrderController extends Controller
             'comment' => $comment,
             'created_at' => Carbon::now()->format('Y-m-d'),
         ]);
-
+        DB::commit();
         return Redirect::route('order.completeOrders')->with('success', 'Order has been completed!');
     }
 
@@ -1078,7 +1079,9 @@ class OrderController extends Controller
     public function payDueOrder(ValidatePayDueOrderRequest $request)
     {
         $validatedData = $request->validated();
-        $order = Order::findOrFail($validatedData['id']);
+        $order = Order::query()
+            ->with(['customer'])
+            ->findOrFail($validatedData['id']);
 
         $amountToPay = $validatedData['pay'];
         $previousDue = $order->due;
@@ -1089,6 +1092,7 @@ class OrderController extends Controller
             return Redirect::route('order.dueOrderDetails', $order->id)
                 ->with('error', 'You cannot pay more than the due amount!');
         }
+
         DB::beginTransaction();
         try {
             // Determine the new order status
@@ -1125,7 +1129,7 @@ class OrderController extends Controller
 
     }
 
-    private function recordJournalEntry($order, $debit, $amountDue)
+    private function recordJournalEntry(Order $order, $debit, $amountDue)
     {
         $customer = $order->customer->name;
         $description = "Refund of overdue invoice";

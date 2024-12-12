@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Kyslik\ColumnSortable\Sortable;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * App\Models\Order
@@ -62,8 +63,9 @@ use Kyslik\ColumnSortable\Sortable;
  * @method static Builder|Order whereVat($value)
  * @mixin Eloquent
  */
-class Order extends Model
+class Order extends Model implements Auditable
 {
+    use \OwenIt\Auditing\Auditable;
     use HasFactory, Sortable;
 
     protected $fillable = [
@@ -93,12 +95,12 @@ class Order extends Model
         'id',
     ];
 
-    protected $with = [
+   /* protected $with = [
         'customer',
         'user_created',
         'user_updated',
         'dues',
-    ];
+    ];*/
     protected array $dates = ['from_date', 'to_date'];
 
     public static $rules = array(

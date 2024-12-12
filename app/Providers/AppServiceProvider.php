@@ -22,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
+        Model::preventLazyLoading(!app()->environment('production'));
         Model::unguard();
     }
 }

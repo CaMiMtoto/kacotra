@@ -307,4 +307,13 @@ class ProductController extends Controller
         }
     }
 
+    public function adjustStock(Product $product)
+    {
+        $data = request()->validate([
+            'quantity'=>['required','integer','min:1'],
+            'reason'=>['required','string','max:2000'],
+
+        ]);
+    }
+
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use Kyslik\ColumnSortable\Sortable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * App\Models\Stock
@@ -53,8 +54,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @method static \Illuminate\Database\Eloquent\Builder|Stock whereUpdatedAt($value)
  * @mixin \Eloquent
  */
-class Stock extends Model
+class Stock extends Model implements Auditable
 {
+    use \OwenIt\Auditing\Auditable;
     use HasFactory, Sortable;
 
     protected $fillable = [
