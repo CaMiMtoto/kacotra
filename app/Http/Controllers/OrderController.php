@@ -613,9 +613,9 @@ class OrderController extends Controller
                 }
             }
 
-            Product::where('id', $product->product_id)
+/*            Product::where('id', $product->product_id)
                 ->where('is_deleted', 0)
-                ->update(['stock' => DB::raw('stock-' . $product->quantity)]);
+                ->update(['stock' => DB::raw('stock-' . $product->quantity)]);*/
         }
 
         Order::findOrFail($order_id)->update([
