@@ -517,11 +517,11 @@ class OrderController extends Controller
             OrderDetails::insert($orderDetails);
 
             // Update Product Stock
-            foreach ($contents as $content) {
+     /*       foreach ($contents as $content) {
                 Product::where('id', $content->id)
                     ->where('is_deleted', 0)
                     ->decrement('stock', $content->qty);
-            }
+            }*/
             // save order payment
             if ($validatedData['payment_type'] != 'Due') {
                 $order->payments()
@@ -558,65 +558,65 @@ class OrderController extends Controller
         $reference = $order->invoice_no;
 
         // Reduce the stock
-        $products = OrderDetails::where('order_id', $order_id)
+        $orderDetails = OrderDetails::where('order_id', $order_id)
             ->where('is_deleted', 0)
             ->get();
 
-        foreach ($products as $product) {
-            $isOpened = Stock::where('product_id', $product->product_id)
+        foreach ($orderDetails as $orderDetail) {
+            $isOpened = Stock::where('product_id', $orderDetail->product_id)
                 ->where('is_deleted', 0)
                 ->whereDate('stock_date', Carbon::now())
                 ->first();
 
             if ((empty($isOpened) || $isOpened == null) && $order->is_confirmed == 0) {
-                $opening = Product::where('id', $product->product_id)
+                $opening = Product::where('id', $orderDetail->product_id)
                     ->where('is_deleted', 0)
                     ->first();
                 if (!empty($opening->stock)) {
                     Stock::insert([
                         'reference' => $reference,
-                        'product_id' => $product->product_id,
+                        'product_id' => $orderDetail->product_id,
                         'opening' => $opening->stock,
                         'buying_price' => $opening->buying_price,
                         'stock_value' => $opening->stock * $opening->selling_price,
-                        'sales' => $product->quantity,
-                        'sale_value' => $product->total,
+                        'sales' => $orderDetail->quantity,
+                        'sale_value' => $orderDetail->total,
                         'purchases' => 0,
                         'purchase_value' => 0,
                         'damages' => 0,
                         'damage_value' => 0,
                         'stock_date' => Carbon::now()->format('Y-m-d'),
-                        'closing' => $opening->stock - $product->quantity,
-                        'closing_value' => ($opening->stock - $product->quantity) * $opening->selling_price,
+                        'closing' => $opening->stock - $orderDetail->quantity,
+                        'closing_value' => ($opening->stock - $orderDetail->quantity) * $opening->selling_price,
                         'created_at' => Carbon::now()
                     ]);
                 }
             } else {
                 if ($order->is_confirmed == 0) {
-                    $currentStock = Stock::where('product_id', $product->product_id)
+                    $currentStock = Stock::where('product_id', $orderDetail->product_id)
                         ->where('is_deleted', 0)
                         ->whereDate('stock_date', Carbon::now())
                         ->first();
 
-                    $c_product = Product::where('id', $product->product_id)
+                    $c_product = Product::where('id', $orderDetail->product_id)
                         ->where('is_deleted', 0)
                         ->first();
 
-                    Stock::where('product_id', $product->product_id)
+                    Stock::where('product_id', $orderDetail->product_id)
                         ->where('is_deleted', 0)
                         ->whereDate('stock_date', Carbon::now())
                         ->update([
-                            'sales' => $currentStock->sales + $product->quantity,
-                            'sale_value' => $currentStock->sale_value + $product->total,
-                            'closing' => $currentStock->closing - $product->quantity,
-                            'closing_value' => ($currentStock->closing - $product->quantity) * $c_product->buying_price,
+                            'sales' => $currentStock->sales + $orderDetail->quantity,
+                            'sale_value' => $currentStock->sale_value + $orderDetail->total,
+                            'closing' => $currentStock->closing - $orderDetail->quantity,
+                            'closing_value' => ($currentStock->closing - $orderDetail->quantity) * $c_product->buying_price,
                         ]);
                 }
             }
 
-            /*            Product::where('id', $product->product_id)
-                            ->where('is_deleted', 0)
-                            ->update(['stock' => DB::raw('stock-' . $product->quantity)]);*/
+            Product::where('id', $orderDetail->product_id)
+                ->where('is_deleted', 0)
+                ->decrement('stock', $orderDetail->quantity);
         }
 
         Order::findOrFail($order_id)->update([
