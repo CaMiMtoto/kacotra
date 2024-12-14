@@ -619,6 +619,9 @@ class OrderController extends Controller
 
         if ($order->due > 0) {
             $comment = "Invoice paid partially";
+            if ($order->pay == 0) {
+                $comment = "Invoice not paid!";
+            }
             Order::findOrFail($order_id)->update([
                 'order_status' => 'pending',
                 'is_confirmed' => 1
@@ -641,17 +644,6 @@ class OrderController extends Controller
             ]);
         }
 
-        if ($order->payment_type == 'Due') {
-            $comment = "Invoice not paid!";
-            Due::insert([
-                'order_id' => $order->id,
-                'user_id' => auth()->user()->id,
-                'due' => $order->due,
-                'due_date' => Carbon::now()->format('Y-m-d'),
-                'comment' => $comment,
-                'created_at' => Carbon::now()
-            ]);
-        }
 
         /**
          * Record sales to journal
