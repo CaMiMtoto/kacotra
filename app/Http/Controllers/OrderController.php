@@ -515,13 +515,6 @@ class OrderController extends Controller
             }
 
             OrderDetails::insert($orderDetails);
-
-            // Update Product Stock
-     /*       foreach ($contents as $content) {
-                Product::where('id', $content->id)
-                    ->where('is_deleted', 0)
-                    ->decrement('stock', $content->qty);
-            }*/
             // save order payment
             if ($validatedData['payment_type'] != 'Due') {
                 $order->payments()
@@ -554,7 +547,6 @@ class OrderController extends Controller
         $order = Order::where('id', $order_id)
             ->where('is_deleted', 0)
             ->first();
-
         $reference = $order->invoice_no;
 
         // Reduce the stock
