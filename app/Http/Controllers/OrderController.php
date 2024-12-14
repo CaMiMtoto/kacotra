@@ -63,7 +63,6 @@ class OrderController extends Controller
                 'orders.vat as vat'
             )
             ->where('order_status', 'pending')
-            ->where('is_confirmed', 0)
             ->where('orders.is_deleted', 0)
             ->orderBy('updated_at', 'DESC')
             ->orderBy('created_at', 'DESC')
@@ -642,20 +641,11 @@ class OrderController extends Controller
         }
 
         if ($order->payment_type == 'Due') {
-            $due = $order->pay;
             $comment = "Invoice not paid!";
-            $pay = 0;
-            Order::findOrFail($order_id)->update([
-                'order_status' => 'pending',
-                'is_confirmed' => 1,
-                'pay' => $pay,
-                'due' => $due
-            ]);
-
             Due::insert([
                 'order_id' => $order->id,
                 'user_id' => auth()->user()->id,
-                'due' => $order->pay,
+                'due' => $order->due,
                 'due_date' => Carbon::now()->format('Y-m-d'),
                 'comment' => $comment,
                 'created_at' => Carbon::now()
