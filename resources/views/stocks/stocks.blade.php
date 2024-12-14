@@ -46,30 +46,11 @@
     <div class="card mb-4">
         <div class="card-body">
             <div class="row mx-n4">
-                {{-- <div class="col-lg-12 card-header mt-n4">
-                    <form action="{{ route('stocks.index') }}" method="GET">
-                        <div class="d-flex flex-wrap align-items-center justify-content-between">
-
-                            <div class="form-group row align-items-center justify-content-between">
-                                <label class="control-label col-sm-3" for="search">Search:</label>
-                                <div class="col-sm-8">
-                                    <div class="input-group">
-                                        <input type="text" id="search" class="form-control me-1" name="search" placeholder="Search sale" value="{{ request('search') }}">
-                                        <div class="input-group-append">
-                                            <button type="submit" class="input-group-text bg-primary"><i class="fa-solid fa-magnifying-glass font-size-20 text-white"></i></button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div> --}}
 
                 @include('partials.stock-header')
 
 
                 <hr>
-
 
 
                 <div class="col-lg-12">
