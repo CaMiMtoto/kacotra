@@ -63,6 +63,7 @@ class OrderController extends Controller
                 'orders.vat as vat'
             )
             ->where('order_status', 'pending')
+            ->where('due','>',0)
             ->where('orders.is_deleted', 0)
             ->orderBy('updated_at', 'DESC')
             ->orderBy('created_at', 'DESC')
