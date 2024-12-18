@@ -108,7 +108,7 @@ class Order extends Model implements Auditable
         'toDate' => 'regex:/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/ | date_format:"Y-m-d"',
     );
 
-    public function customer()
+    public function customer(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customer_id', 'id');
     }
