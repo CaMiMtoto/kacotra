@@ -90,7 +90,7 @@
                                     <tr>
                                         <th scope="row">{{ (($orders->currentPage() * (request('row') ? request('row') : 10)) - (request('row') ? request('row') : 10)) + $loop->iteration  }}</th>
                                         <td>{{ $order->invoice_no }}</td>
-                                        <td>{{ $order->customer }}</td>
+                                        <td>{{ $order->customer->name }}</td>
                                         <td>{{ $order->order_date }}</td>
                                         <td>{{ $order->payment_type }}</td>
                                         <td class="text-end">{{ number_format($order->total,0) }}</td>

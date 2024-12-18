@@ -3047,10 +3047,10 @@ class OrderController extends Controller
     {
         return Order::query()
             ->when($from_date, function ($query) use ($from_date) {
-                return $query->whereDate('updated_at', '>=', $from_date);
+                return $query->whereDate('created_at', '>=', $from_date);
             })
             ->when($to_date, function ($query) use ($to_date) {
-                return $query->whereDate('updated_at', '<=', $to_date);
+                return $query->whereDate('created_at', '<=', $to_date);
             })
             ->where('is_deleted', 0)
             ->sum('pay');
@@ -3065,10 +3065,10 @@ class OrderController extends Controller
     {
         return Order::query()
             ->when($from_date, function ($query) use ($from_date) {
-                return $query->whereDate('updated_at', '>=', $from_date);
+                return $query->whereDate('created_at', '>=', $from_date);
             })
             ->when($to_date, function ($query) use ($to_date) {
-                return $query->whereDate('updated_at', '<=', $to_date);
+                return $query->whereDate('created_at', '<=', $to_date);
             })
             ->where('is_deleted', 0)
             ->sum('due');
@@ -3083,10 +3083,10 @@ class OrderController extends Controller
     {
         return Order::query()
             ->when($from_date, function ($query) use ($from_date) {
-                return $query->whereDate('updated_at', '>=', $from_date);
+                return $query->whereDate('created_at', '>=', $from_date);
             })
             ->when($to_date, function ($query) use ($to_date) {
-                return $query->whereDate('updated_at', '<=', $to_date);
+                return $query->whereDate('created_at', '<=', $to_date);
             })
             ->where('is_deleted', 0)
             ->where('due', '<', 0)
