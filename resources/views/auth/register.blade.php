@@ -6,7 +6,7 @@
         <div class="col-xl-5 col-lg-5">
             <!-- BEGIN: Social Registration Form -->
             <div class="card my-2">
-                <img src="{{ asset('assets/img/logos/kacotra-cement-01.png') }}" alt="KACOTRA Ltd" class="img-fluid mx-5" />
+                <img src="{{ asset('assets/img/logos/kacotra-cement-01.png') }}" alt="IMSLtd" class="img-fluid mx-5" />
                 <div class="card-body px-3 text-center">
                     <div class="h3 fw-light mb-0">Create an Account</div>
                 </div>

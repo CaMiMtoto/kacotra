@@ -7,7 +7,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
         <meta name="description" content="" />
         <meta name="author" content="" />
-        <title>KACOTRA Dashboard Inventory</title>
+        <title>IMSDashboard Inventory</title>
 
         <!-- Favicons -->
         <link href="{{ asset('assets/img/logos/cement-bag-01.png') }}" rel="icon">
@@ -22,6 +22,17 @@
 
         <!-- Custom CSS for specific page.  -->
         @yield('specificpagestyles')
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+        <style>
+            *{
+                font-family: "Figtree", sans-serif !important;
+            }
+            .logo{
+                height: 72px;
+            }
+        </style>
     </head>
 
     <body class="nav-fixed">

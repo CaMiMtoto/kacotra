@@ -3,14 +3,14 @@
 @section('content')
 <div class="container-xl px-4">
     <div class="row justify-content-center">
-        <div class="col-xl-5 col-lg-6 col-md-8 col-sm-11">
+        <div class="col-md-6 col-lg-5 col-xl-4">
             <div class="card my-2">
-                <img src="{{ asset('assets/img/logos/kacotra-cement-01.png') }}" alt="KACOTRA Ltd" class="img-fluid mx-5" />
-                <div class="card-body px-3 text-center">
-                    <div class="h3 fw-light mb-0">Sign In</div>
-                </div>
-                <hr class="my-0" />
                 <div class="card-body px-3">
+
+                    <div class="card-body px-3 text-center">
+                        <img src="{{ asset('assets/img/logos/ims_logo.png') }}"  class="img-fluid logo"  alt="Logo"/>
+                        <div class="h3 fw-light mb-0">Sign In</div>
+                    </div>
                     <!-- BEGIN: Login Form-->
                     <form action="{{ route('login') }}" method="POST">
                         @csrf
@@ -61,13 +61,13 @@
                     </form>
                     <!-- END: Login Form-->
                 </div>
-                <hr class="my-0" />
+            {{--    <hr class="my-0" />
                 <div class="card-body px-3 py-4">
                     <div class="small text-center">
                         New user?
                         <a href="{{ route('register') }}">Create an account!</a>
                     </div>
-                </div>
+                </div>--}}
             </div>
             <!-- END: Social Login Form-->
         </div>

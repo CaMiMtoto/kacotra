@@ -13,7 +13,7 @@
                 <!-- Sidenav Accordion (Pages)-->
                 <a class="nav-link collapsed" href="javascript:void(0);" data-bs-toggle="collapse"
                    data-bs-target="#orderPages" aria-expanded="false" aria-controls="orderPages">
-                    <div class="nav-link-icon"><i data-feather="grid"></i></div>
+                    <div class="nav-link-icon"><i data-feather="printer"></i></div>
                     Reports
                     <div class="sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                 </a>
@@ -112,7 +112,7 @@
                 <!-- Sidenav Accordion (Pages -> Purchases)-->
                 <a class="nav-link collapsed" href="javascript:void(0);" data-bs-toggle="collapse"
                    data-bs-target="#purchasePages" aria-expanded="false" aria-controls="purchasePages">
-                    <div class="nav-link-icon"><i data-feather="grid"></i></div>
+                    <div class="nav-link-icon"><i data-feather="shopping-bag"></i></div>
                     Purchases
                     <div class="sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                 </a>
@@ -135,7 +135,7 @@
                 <!-- Sidenav Accordion (Pages -> Expenses)-->
                 <a class="nav-link collapsed" href="javascript:void(0);" data-bs-toggle="collapse"
                    data-bs-target="#expensePages" aria-expanded="false" aria-controls="expensePages">
-                    <div class="nav-link-icon"><i data-feather="grid"></i></div>
+                    <div class="nav-link-icon"><i data-feather="activity"></i></div>
                     Expenses
                     <div class="sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                 </a>
@@ -154,7 +154,7 @@
                 <!-- Sidenav Accordion (Pages -> Settings)-->
                 <a class="nav-link collapsed" href="javascript:void(0);" data-bs-toggle="collapse"
                    data-bs-target="#settingsPages" aria-expanded="false" aria-controls="settingsPages">
-                    <div class="nav-link-icon"><i data-feather="grid"></i></div>
+                    <div class="nav-link-icon"><i data-feather="settings"></i></div>
                     Settings
                     <div class="sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                 </a>
@@ -198,7 +198,7 @@
                 <!-- Sidenav Accordion (Pages -> People)-->
                 <a class="nav-link collapsed" href="javascript:void(0);" data-bs-toggle="collapse"
                    data-bs-target="#peoplePages" aria-expanded="false" aria-controls="peoplePages">
-                    <div class="nav-link-icon"><i data-feather="grid"></i></div>
+                    <div class="nav-link-icon"><i data-feather="users"></i></div>
                     People
                     <div class="sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                 </a>

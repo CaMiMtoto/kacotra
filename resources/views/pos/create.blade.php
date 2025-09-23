@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <title>Kacotra Ltd</title>
+        <title>IMSLtd</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta charset="UTF-8">
 
@@ -28,7 +28,7 @@
                                 <div class="row">
                                     <div class="col-lg-6 col-sm-6">
                                         <div class="logo">
-                                            <h1>KACOTRA Ltd</h1>
+                                            <h1>IMSLtd</h1>
                                         </div>
                                     </div>
                                     <div class="col-lg-6 col-sm-6">
@@ -59,7 +59,7 @@
                                     </div>
                                     <div class="col-sm-6 text-end mb-50">
                                         <h4 class="inv-title-1">Store</h4>
-                                        <p class="inv-from-1">KACOTRA Ltd</p>
+                                        <p class="inv-from-1">IMSLtd</p>
                                         <p class="inv-from-1">+250 788 300 764</p>
                                         <p class="inv-from-1">sales@kacotra.com</p>
                                         <p class="inv-from-2">Gisenyi, Rubavu, Western Province</p>

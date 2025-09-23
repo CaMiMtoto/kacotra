@@ -23,7 +23,7 @@
                         <div class="page-header-icon"><i data-feather="activity"></i></div>
                         Dashboard
                     </h1>
-                    <div class="page-header-subtitle">KACOTRA Ltd Inventory Management System</div>
+                    <div class="page-header-subtitle">IMS</div>
                 </div>
                 <div class="col-12 col-xl-auto mt-4">
                     <div class="input-group input-group-joined border-0" style="width: 16.5rem">
@@ -43,7 +43,7 @@
         <div class="col-md-12 mb-4">
             <div class="card bg-light text-white h-100">
                 <div class="card-body">
-                    <h1>{{ auth()->user()->name }} welcome to KACOTRA LTD</h1>
+                    <h1>{{ auth()->user()->name }} welcome to IMS LTD</h1>
                 </div>
             </div>
         </div>

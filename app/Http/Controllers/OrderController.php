@@ -44,27 +44,30 @@ class OrderController extends Controller
             abort(400, 'The per-page parameter must be an integer between 1 and 100.');
         }
 
-        $orders = DB::table('orders')
-            ->join('customers', 'orders.customer_id', '=', 'customers.id')
-            ->where('customers.is_deleted', 0)
+        $query = Order::with('customer')
+            ->whereHas('customer', fn($q) => $q->where('is_deleted', 0))
             ->where('order_status', 'pending')
             ->where('is_confirmed', 0)
-            ->where('orders.is_deleted', 0)
-            ->orderBy('updated_at', 'DESC')
-            ->orderBy('created_at', 'DESC')
+            ->where('is_deleted', 0);
+
+// Paginated orders
+        $orders = $query->clone()->orderByDesc('updated_at')
+            ->orderByDesc('created_at')
             ->paginate($row)
             ->appends(request()->query());
 
-        $cashInHand = $orders->where('payment_type', '=', 'HandCash')->sum('pay');
-        $cashMoMo = $orders->where('payment_type', '=', 'MoMo')->sum('pay');
-        $cashInCheque = $orders->where('payment_type', '=', 'Cheque')->sum('pay');
-        $cashDue = $orders->where('due', '>', 0)->sum('due');
-        $cashOver = $orders->where('due', '<', 0)->sum('due');
+// Aggregations (without pagination)
+        $cashInHand = (clone $query)->where('payment_type', 'HandCash')->sum('pay');
+        $cashMoMo = (clone $query)->where('payment_type', 'MoMo')->sum('pay');
+        $cashInCheque = (clone $query)->where('payment_type', 'Cheque')->sum('pay');
+        $cashDue = (clone $query)->where('due', '>', 0)->sum('due');
+        $cashOver = (clone $query)->where('due', '<', 0)->sum('due');
 
-        $totalInvoices = $orders->sum('total');
-        $totalPaid = $orders->sum('pay');
-        $totalTax = $orders->sum('vat');
+        $totalInvoices = (clone $query)->sum('total');
+        $totalPaid = (clone $query)->sum('pay');
+        $totalTax = (clone $query)->sum('vat');
         $balance = $totalInvoices - $totalPaid;
+
 
         return view('orders.orders', [
             'orders' => $orders,

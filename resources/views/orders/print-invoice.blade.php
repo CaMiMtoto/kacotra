@@ -60,7 +60,7 @@
                             </div>
                             <div class="col-sm-6 text-end mb-50">
                                 <h4 class="inv-title-1">Store</h4>
-                                <p class="inv-from-1">KACOTRA Ltd</p>
+                                <p class="inv-from-1">IMSLtd</p>
                                 <p class="inv-from-1">+250 788 000 000</p>
                                 <p class="inv-from-1">sales@kacotra.com</p>
                                 <p class="inv-from-2">Gisenyi, Rubavu, Western Province</p>
